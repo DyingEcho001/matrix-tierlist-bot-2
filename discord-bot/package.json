@@ -1,0 +1,29 @@
+{
+  "name": "minecraft-tierlist-bot",
+  "version": "1.0.0",
+  "description": "A fully-featured Minecraft PvP tierlist Discord bot",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "deploy": "ts-node src/deploy-commands.ts",
+    "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "drizzle-orm": "^0.39.1",
+    "pg": "^8.13.1",
+    "dotenv": "^16.4.7",
+    "axios": "^1.7.9"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
+    "drizzle-kit": "^0.30.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}
