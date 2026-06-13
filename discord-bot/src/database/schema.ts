@@ -280,6 +280,16 @@ export const voluntaryTesterRole = pgTable(
   }
 );
 
+export const queuePriorityRoles = pgTable(
+  "queue_priority_roles",
+  {
+    id: serial("id").primaryKey(),
+    guildId: text("guild_id").notNull().unique(),
+    roleId: text("role_id").notNull(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  }
+);
+
 export const shameRoles = pgTable(
   "shame_roles",
   {

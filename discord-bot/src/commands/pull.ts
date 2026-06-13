@@ -16,7 +16,7 @@ import { GAMEMODE_KEYS, GAMEMODES, Gamemode } from "../utils/constants";
 import { isVoluntaryTester } from "../utils/permissions";
 import {
   getOrCreateQueue,
-  popFromQueue,
+  popFromQueueWithPriority,
 } from "../handlers/queue";
 import { createTestingTicket } from "../handlers/ticket";
 import { logCommand } from "../handlers/audit";
@@ -108,7 +108,7 @@ export const pullCommand = {
         .where(eq(tickets.id, existingTicket[0].id));
     }
 
-    const testeeId = await popFromQueue(queue.id);
+    const testeeId = await popFromQueueWithPriority(queue.id, interaction.guildId!, client);
     if (!testeeId) {
       await interaction.editReply({
         content: "❌ The queue is empty. No one to pull.",

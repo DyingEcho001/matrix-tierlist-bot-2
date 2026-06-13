@@ -42,6 +42,7 @@ import { queueChannelSetCommand } from "./queue-channel-set";
 import { alltimeLeaderboardCommand } from "./alltime-leaderboard";
 import { monthlyLeaderboardCommand } from "./monthly-leaderboard";
 import { statsCommand } from "./stats";
+import { queuePriorityRoleCommand } from "./queue-priority-role";
 
 const allCommands: Command[] = [
   startCommand,
@@ -78,6 +79,7 @@ const allCommands: Command[] = [
   alltimeLeaderboardCommand,
   monthlyLeaderboardCommand,
   statsCommand,
+  queuePriorityRoleCommand,
 ];
 
 for (const cmd of allCommands) {

@@ -1,4 +1,4 @@
-import { Client, TextChannel, Message } from "discord.js";
+import { Client, TextChannel } from "discord.js";
 import { db } from "../database";
 import {
   queues,
@@ -6,6 +6,7 @@ import {
   queueTesters,
   players,
   channelConfig,
+  queuePriorityRoles,
 } from "../database/schema";
 import { eq, and, asc } from "drizzle-orm";
 import {
@@ -91,6 +92,39 @@ export async function popFromQueue(
 ): Promise<string | null> {
   const members = await getQueueMembers(queueId);
   if (members.length === 0) return null;
+  const first = members[0];
+  await removeFromQueue(queueId, first.discordId);
+  return first.discordId;
+}
+
+export async function popFromQueueWithPriority(
+  queueId: number,
+  guildId: string,
+  client: Client
+): Promise<string | null> {
+  const members = await getQueueMembers(queueId);
+  if (members.length === 0) return null;
+
+  const priorityRow = await db
+    .select()
+    .from(queuePriorityRoles)
+    .where(eq(queuePriorityRoles.guildId, guildId))
+    .limit(1);
+
+  if (priorityRow.length > 0) {
+    const roleId = priorityRow[0].roleId;
+    const guild = client.guilds.cache.get(guildId);
+    if (guild) {
+      for (const member of members) {
+        const guildMember = await guild.members.fetch(member.discordId).catch(() => null);
+        if (guildMember && guildMember.roles.cache.has(roleId)) {
+          await removeFromQueue(queueId, member.discordId);
+          return member.discordId;
+        }
+      }
+    }
+  }
+
   const first = members[0];
   await removeFromQueue(queueId, first.discordId);
   return first.discordId;
