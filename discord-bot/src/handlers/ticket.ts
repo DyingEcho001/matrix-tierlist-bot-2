@@ -196,15 +196,35 @@ export async function closeTicket(params: {
   }
 
   try {
-    const tester = await client.users.fetch(ticket.testerId).catch(() => null);
-    const testee = await client.users.fetch(ticket.testeeId).catch(() => null);
+    const testeeUser = await client.users.fetch(ticket.testeeId).catch(() => null);
+    const testerUser = await client.users.fetch(ticket.testerId).catch(() => null);
 
-    if (tester && testee) {
+    if (testeeUser && testerUser) {
+      const playerData = await db
+        .select()
+        .from(players)
+        .where(eq(players.discordId, ticket.testeeId))
+        .limit(1);
+
+      const prevTierRow = await db
+        .select()
+        .from(tiers)
+        .where(and(eq(tiers.discordId, ticket.testeeId), eq(tiers.gamemode, ticket.gamemode)))
+        .limit(1);
+
+      const ign = playerData[0]?.ign ?? testeeUser.username;
+      const region = playerData[0]?.region ?? ticket.region;
+      const previousTier = prevTierRow[0]?.tier ?? null;
+
       const resultEmbed = buildTestResultEmbed({
-        testee,
-        tester,
+        testeeId: ticket.testeeId,
+        testerId: ticket.testerId,
+        testeeAvatarURL: testeeUser.displayAvatarURL({ size: 128 }),
+        ign,
+        region,
         gamemode: ticket.gamemode as Gamemode,
         tier,
+        previousTier,
         cooldownDays: skipCooldown ? 0 : cooldownDays,
       });
 
@@ -250,8 +270,11 @@ export async function sendResultToChannel(params: {
   gamemode: Gamemode;
   tier: Tier;
   cooldownDays: number;
+  ign?: string;
+  region?: string;
+  previousTier?: string | null;
 }): Promise<void> {
-  const { client, guildId, testeeId, testerId, gamemode, tier, cooldownDays } = params;
+  const { client, guildId, testeeId, testerId, gamemode, tier, cooldownDays, ign, region, previousTier } = params;
   try {
     const resultsChannelId = await getChannelId(guildId, "results");
     if (!resultsChannelId) return;
@@ -261,11 +284,24 @@ export async function sendResultToChannel(params: {
       .catch(() => null)) as TextChannel | null;
     if (!resultsChannel) return;
 
-    const tester = await client.users.fetch(testerId).catch(() => null);
-    const testee = await client.users.fetch(testeeId).catch(() => null);
-    if (!tester || !testee) return;
+    const testeeUser = await client.users.fetch(testeeId).catch(() => null);
+    if (!testeeUser) return;
 
-    const resultEmbed = buildTestResultEmbed({ testee, tester, gamemode, tier, cooldownDays });
+    const resolvedIgn = ign ?? testeeUser.username;
+    const resolvedRegion = region ?? "Unknown";
+
+    const resultEmbed = buildTestResultEmbed({
+      testeeId,
+      testerId,
+      testeeAvatarURL: testeeUser.displayAvatarURL({ size: 128 }),
+      ign: resolvedIgn,
+      region: resolvedRegion,
+      gamemode,
+      tier,
+      previousTier,
+      cooldownDays,
+    });
+
     await resultsChannel.send({ content: `<@${testeeId}>`, embeds: [resultEmbed] });
   } catch (err) {
     console.error("Failed to send result to results channel:", err);

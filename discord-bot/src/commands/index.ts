@@ -38,6 +38,7 @@ import { resetCooldownCommand } from "./reset-cooldown";
 import { cooldownAddCommand } from "./cooldown-add";
 import { shameroleAssignCommand } from "./shamerole-assign";
 import { sendEmbedCommand } from "./send-embed";
+import { queueChannelSetCommand } from "./queue-channel-set";
 
 const allCommands: Command[] = [
   startCommand,
@@ -70,6 +71,7 @@ const allCommands: Command[] = [
   cooldownAddCommand,
   shameroleAssignCommand,
   sendEmbedCommand,
+  queueChannelSetCommand,
 ];
 
 for (const cmd of allCommands) {

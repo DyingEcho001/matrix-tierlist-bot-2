@@ -5,7 +5,7 @@ import {
   GuildMember,
 } from "discord.js";
 import { db } from "../database";
-import { tiers, cooldowns } from "../database/schema";
+import { tiers, cooldowns, players } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import {
   TIERS,
@@ -46,12 +46,6 @@ export const rankCommand = {
         .addChoices(
           ...GAMEMODE_KEYS.map((gm) => ({ name: GAMEMODES[gm], value: gm }))
         )
-    )
-    .addStringOption((o) =>
-      o
-        .setName("ign")
-        .setDescription("Player's IGN (optional)")
-        .setRequired(false)
     ),
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
@@ -61,13 +55,19 @@ export const rankCommand = {
     const tier = interaction.options.getString("tier", true) as Tier;
     const targetUser = interaction.options.getUser("user", true);
     const gamemode = interaction.options.getString("gamemode", true) as Gamemode;
-    const ign = interaction.options.getString("ign");
 
     await interaction.deferReply({ ephemeral: true });
 
     const isHT3Plus = HT3_PLUS_TIERS.includes(tier);
     const cooldownMs = isHT3Plus ? COOLDOWNS.ht3 : COOLDOWNS.normal;
     const cooldownDays = isHT3Plus ? 15 : 5;
+
+    const prevTierRow = await db
+      .select()
+      .from(tiers)
+      .where(and(eq(tiers.discordId, targetUser.id), eq(tiers.gamemode, gamemode)))
+      .limit(1);
+    const previousTier = prevTierRow[0]?.tier ?? null;
 
     await db
       .insert(tiers)
@@ -91,6 +91,12 @@ export const rankCommand = {
         set: { expiresAt, createdAt: new Date() },
       });
 
+    const playerData = await db
+      .select()
+      .from(players)
+      .where(eq(players.discordId, targetUser.id))
+      .limit(1);
+
     await sendResultToChannel({
       client,
       guildId: interaction.guildId!,
@@ -99,6 +105,9 @@ export const rankCommand = {
       gamemode,
       tier,
       cooldownDays,
+      ign: playerData[0]?.ign,
+      region: playerData[0]?.region,
+      previousTier,
     });
 
     await interaction.editReply({
@@ -110,7 +119,7 @@ export const rankCommand = {
       user: member,
       guildId: interaction.guildId!,
       channelId: interaction.channelId,
-      options: { tier, user: targetUser.id, gamemode, ign: ign ?? "not provided" },
+      options: { tier, user: targetUser.id, gamemode },
     });
   },
 };

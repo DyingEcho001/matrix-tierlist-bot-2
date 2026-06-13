@@ -77,9 +77,7 @@ export function buildQueueOpenEmbed(params: {
 
   const memberList =
     members.length > 0
-      ? members
-          .map((m, i) => `${i + 1}. <@${m.discordId}>`)
-          .join("\n")
+      ? members.map((m, i) => `${i + 1}. <@${m.discordId}>`).join("\n")
       : "*No one in queue yet*";
 
   const testerList =
@@ -97,7 +95,7 @@ export function buildQueueOpenEmbed(params: {
         "**Queue:**",
         memberList,
         "",
-        `**Active Testers:**`,
+        "**Active Testers:**",
         testerList,
       ].join("\n")
     )
@@ -173,43 +171,33 @@ export function buildTicketInfoEmbed(params: {
 }
 
 export function buildTestResultEmbed(params: {
-  testee: User | GuildMember;
-  tester: User | GuildMember;
+  testeeId: string;
+  testerId: string;
+  testeeAvatarURL: string;
+  ign: string;
+  region: string;
   gamemode: Gamemode;
   tier: Tier;
+  previousTier?: string | null;
   cooldownDays: number;
 }): EmbedBuilder {
-  const { testee, tester, gamemode, tier, cooldownDays } = params;
-
-  const testeeId = testee instanceof GuildMember ? testee.id : testee.id;
-  const testerId = tester instanceof GuildMember ? tester.id : tester.id;
-  const testeeTag = testee instanceof GuildMember ? testee.displayName : testee.username;
-  const testerTag = tester instanceof GuildMember ? tester.displayName : tester.username;
-
-  const cooldownExpires = cooldownDays > 0
-    ? `<t:${Math.floor((Date.now() + cooldownDays * 24 * 60 * 60 * 1000) / 1000)}:R>`
-    : "No cooldown";
-
-  const tierColor = tier.startsWith("HT") ? EMBED_COLORS.success : EMBED_COLORS.primary;
+  const { testeeId, testerId, testeeAvatarURL, ign, region, gamemode, tier, previousTier, cooldownDays } = params;
 
   return new EmbedBuilder()
-    .setTitle(`📋 Test Result — ${GAMEMODES[gamemode]}`)
-    .setColor(tierColor)
+    .setAuthor({
+      name: `${ign}'s Test Results`,
+      iconURL: testeeAvatarURL,
+    })
+    .setDescription("🏆")
+    .setColor(0xed4245)
+    .setThumbnail(`https://visage.surgeplay.com/bust/128/${ign}`)
     .addFields(
-      { name: "👤 Player", value: `<@${testeeId}> (${testeeTag})`, inline: true },
-      { name: "🎮 Gamemode", value: GAMEMODES[gamemode], inline: true },
-      { name: "\u200B", value: "\u200B", inline: true },
-      { name: "🏆 Tier Given", value: `**${tier}** — ${TIER_LABELS[tier]}`, inline: true },
-      { name: "⚔️ Tested By", value: `<@${testerId}> (${testerTag})`, inline: true },
-      { name: "\u200B", value: "\u200B", inline: true },
-      {
-        name: "⏳ Cooldown",
-        value: cooldownDays > 0 ? `${cooldownDays} days — expires ${cooldownExpires}` : "No cooldown",
-        inline: false,
-      }
-    )
-    .setTimestamp()
-    .setFooter({ text: `Tested at` });
+      { name: "Tester:", value: `<@${testerId}>`, inline: false },
+      { name: "Region:", value: region, inline: false },
+      { name: "Username:", value: ign, inline: false },
+      { name: "Previous Rank:", value: previousTier ? TIER_LABELS[previousTier as Tier] ?? previousTier : "Unranked", inline: false },
+      { name: "Rank Earned:", value: TIER_LABELS[tier], inline: false }
+    );
 }
 
 export function buildPlayerDataEmbed(params: {
@@ -301,7 +289,6 @@ export function buildPlayerDataEmbed(params: {
       value: [
         `**Restricted:** <t:${Math.floor(restriction.createdAt.getTime() / 1000)}:f>`,
         `**Expires:** ${expiresText}`,
-        `**Reason:** manual`,
         `**Shame Role:** @${restriction.type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}`,
       ].join("\n"),
       inline: false,
