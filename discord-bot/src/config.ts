@@ -1,5 +1,5 @@
 import * as dotenv from "dotenv";
-dotenv.config();
+dotenv.config({ override: false });
 
 function required(key: string): string {
   const val = process.env[key];

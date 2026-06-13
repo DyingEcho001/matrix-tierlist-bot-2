@@ -1,5 +1,5 @@
 import * as dotenv from "dotenv";
-dotenv.config();
+dotenv.config({ override: false });
 
 import { REST, Routes, SlashCommandBuilder } from "discord.js";
 import { config } from "./config";

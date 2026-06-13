@@ -28,3 +28,7 @@ args = "cd discord-bot && npm run dev"
 
 [workflows.workflow.metadata]
 outputType = "console"
+
+[userenv]
+
+[userenv.shared]

@@ -1,6 +1,5 @@
-import "./config";
 import * as dotenv from "dotenv";
-dotenv.config();
+dotenv.config({ override: false });
 
 import { Client, GatewayIntentBits, Partials } from "discord.js";
 import { config } from "./config";
