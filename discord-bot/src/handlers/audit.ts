@@ -30,7 +30,7 @@ export async function logCommand(
     if (!config[0]) return;
 
     const logChannel = await client.channels.fetch(config[0].channelId).catch(() => null);
-    if (!logChannel || !logChannel.isTextBased()) return;
+    if (!logChannel || !logChannel.isTextBased() || !("send" in logChannel)) return;
 
     const embed = buildAuditLogEmbed({
       command,
@@ -39,7 +39,7 @@ export async function logCommand(
       options,
     });
 
-    await logChannel.send({ embeds: [embed] });
+    await (logChannel as { send: Function }).send({ embeds: [embed] });
   } catch {
   }
 }

@@ -223,7 +223,7 @@ export function buildPlayerDataEmbed(params: {
   };
   tiers: Array<{ gamemode: string; tier: string }>;
   cooldowns: Array<{ gamemode: string; expiresAt: Date }>;
-  testerStats?: { allTimeTests: number; monthlyTests: number } | null;
+  testerStats?: { allTimeTests: number | null; monthlyTests: number | null } | null;
   restriction?: {
     type: string;
     createdAt: Date;

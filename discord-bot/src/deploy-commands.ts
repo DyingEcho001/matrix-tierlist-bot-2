@@ -19,7 +19,7 @@ async function deployCommands(): Promise<void> {
     );
     console.log("✅ Commands deployed successfully!");
     console.log("Commands deployed:");
-    commandData.forEach((cmd) => console.log(`  /${cmd.name}`));
+    commandData.forEach((cmd) => console.log(`  /${(cmd as { name: string }).name}`));
   } catch (err) {
     console.error("❌ Failed to deploy commands:", err);
     process.exit(1);
