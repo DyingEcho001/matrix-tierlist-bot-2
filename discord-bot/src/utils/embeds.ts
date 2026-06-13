@@ -194,6 +194,7 @@ export function buildTestResultEmbed(params: {
     .addFields(
       { name: "Tester:", value: `<@${testerId}>`, inline: false },
       { name: "Region:", value: region, inline: false },
+      { name: "Gamemode:", value: GAMEMODES[gamemode] ?? gamemode, inline: false },
       { name: "Username:", value: ign, inline: false },
       { name: "Previous Rank:", value: previousTier ? TIER_LABELS[previousTier as Tier] ?? previousTier : "Unranked", inline: false },
       { name: "Rank Earned:", value: TIER_LABELS[tier], inline: false }
