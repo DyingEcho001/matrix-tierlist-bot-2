@@ -43,6 +43,7 @@ import { alltimeLeaderboardCommand } from "./alltime-leaderboard";
 import { monthlyLeaderboardCommand } from "./monthly-leaderboard";
 import { statsCommand } from "./stats";
 import { queuePriorityRoleCommand } from "./queue-priority-role";
+import { tierWipeCommand } from "./tier-wipe";
 
 const allCommands: Command[] = [
   startCommand,
@@ -80,6 +81,7 @@ const allCommands: Command[] = [
   monthlyLeaderboardCommand,
   statsCommand,
   queuePriorityRoleCommand,
+  tierWipeCommand,
 ];
 
 for (const cmd of allCommands) {
