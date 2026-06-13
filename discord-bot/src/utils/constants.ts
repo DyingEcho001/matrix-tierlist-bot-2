@@ -28,7 +28,9 @@ export const REGION_KEYS = Object.keys(REGIONS) as Region[];
 
 export const TIERS = [
   "LT5",
+  "HT5",
   "LT4",
+  "HT4",
   "LT3",
   "HT3",
   "HT2",
@@ -39,7 +41,9 @@ export type Tier = (typeof TIERS)[number];
 
 export const TIER_LABELS: Record<Tier, string> = {
   LT5: "Low Tier 5",
+  HT5: "High Tier 5",
   LT4: "Low Tier 4",
+  HT4: "High Tier 4",
   LT3: "Low Tier 3",
   HT3: "High Tier 3",
   HT2: "High Tier 2",
@@ -48,11 +52,13 @@ export const TIER_LABELS: Record<Tier, string> = {
 
 export const TIER_ORDER: Record<Tier, number> = {
   LT5: 0,
-  LT4: 1,
-  LT3: 2,
-  HT3: 3,
-  HT2: 4,
-  HT1: 5,
+  HT5: 1,
+  LT4: 2,
+  HT4: 3,
+  LT3: 4,
+  HT3: 5,
+  HT2: 6,
+  HT1: 7,
 };
 
 export const STAFF_ROLES = [

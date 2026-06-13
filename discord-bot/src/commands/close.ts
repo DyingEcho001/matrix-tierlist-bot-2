@@ -21,7 +21,13 @@ export const closeCommand = {
         .setName("tier")
         .setDescription("The tier to assign to the testee")
         .setRequired(true)
-        .addChoices(...TIERS.map((t) => ({ name: t, value: t })))
+        .addChoices(
+          { name: "LT5", value: "LT5" },
+          { name: "HT5", value: "HT5" },
+          { name: "LT4", value: "LT4" },
+          { name: "HT4", value: "HT4" },
+          { name: "LT3", value: "LT3" },
+        )
     ),
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
