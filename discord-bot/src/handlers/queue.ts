@@ -146,20 +146,17 @@ export async function updateQueueEmbed(
         .fetch(queue.messageId)
         .catch(() => null);
       if (msg) {
-        await msg.edit({ embeds: [openEmbed], components: [row] });
-        return;
+        if (msg.content.includes("@here")) {
+          await msg.edit({ content: "@here", embeds: [openEmbed], components: [row] });
+          return;
+        }
+        await msg.delete().catch(() => null);
       }
-    }
-
-    if (queue.messageId) {
-      const msg = await channel.messages
-        .fetch(queue.messageId)
-        .catch(() => null);
-      if (msg) await msg.delete().catch(() => null);
     }
 
     const newMsg = await channel.send({
       content: "@here",
+      allowedMentions: { parse: ["everyone"] },
       embeds: [openEmbed],
       components: [row],
     });
