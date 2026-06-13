@@ -8,7 +8,6 @@ import {
 import { db } from "../database";
 import { testerStats } from "../database/schema";
 import { desc } from "drizzle-orm";
-import { requireStaff } from "../utils/permissions";
 import { EMBED_COLORS } from "../utils/constants";
 import { logCommand } from "../handlers/audit";
 
@@ -22,12 +21,11 @@ const MONTH_NAMES = [
 export const monthlyLeaderboardCommand = {
   data: new SlashCommandBuilder()
     .setName("monthly-leaderboard")
-    .setDescription("View the monthly tester roster/leaderboard (Helper+)")
+    .setDescription("View the monthly tester roster/leaderboard")
     .setDefaultMemberPermissions(null),
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
     const member = interaction.member as GuildMember;
-    if (!(await requireStaff(interaction, "helper"))) return;
 
     await interaction.deferReply();
 

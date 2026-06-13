@@ -8,7 +8,6 @@ import {
 import { db } from "../database";
 import { testerStats, players, tiers } from "../database/schema";
 import { eq } from "drizzle-orm";
-import { requireStaff } from "../utils/permissions";
 import { GAMEMODES, TIER_LABELS, EMBED_COLORS, Gamemode, Tier } from "../utils/constants";
 import { logCommand } from "../handlers/audit";
 
@@ -20,7 +19,7 @@ const MONTH_NAMES = [
 export const statsCommand = {
   data: new SlashCommandBuilder()
     .setName("stats")
-    .setDescription("View a tester's stats (Helper+)")
+    .setDescription("View a tester's stats")
     .setDefaultMemberPermissions(null)
     .addUserOption((o) =>
       o
@@ -31,8 +30,6 @@ export const statsCommand = {
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
     const member = interaction.member as GuildMember;
-    if (!(await requireStaff(interaction, "helper"))) return;
-
     const targetUser = interaction.options.getUser("user", true);
 
     await interaction.deferReply({ ephemeral: true });
