@@ -8,8 +8,7 @@ import { db } from "../database";
 import {
   restrictions,
   tiers,
-  players,
-  staffRoles,
+  shameRoles,
 } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import { requireStaff, hasStaffRole } from "../utils/permissions";
@@ -64,8 +63,7 @@ export const restrictCommand = {
       );
       if (!canPermanent) {
         await interaction.reply({
-          content:
-            "❌ Only **Tierlist Administrator** or higher can issue permanent restrictions.",
+          content: "❌ Only **Tierlist Administrator** or higher can issue permanent restrictions.",
           ephemeral: true,
         });
         return;
@@ -137,11 +135,11 @@ export const restrictCommand = {
     if (targetMember) {
       const shameRoleRow = await db
         .select()
-        .from(staffRoles)
+        .from(shameRoles)
         .where(
           and(
-            eq(staffRoles.guildId, interaction.guildId!),
-            eq(staffRoles.staffRole, category as any)
+            eq(shameRoles.guildId, interaction.guildId!),
+            eq(shameRoles.category, category)
           )
         )
         .limit(1);

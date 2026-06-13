@@ -9,7 +9,6 @@ import { db } from "../database";
 import {
   queues,
   queueTesters,
-  queueMembers,
   tickets,
 } from "../database/schema";
 import { eq, and } from "drizzle-orm";
@@ -17,10 +16,9 @@ import { GAMEMODE_KEYS, GAMEMODES, Gamemode } from "../utils/constants";
 import { isVoluntaryTester } from "../utils/permissions";
 import {
   getOrCreateQueue,
-  getQueueMembers,
   popFromQueue,
 } from "../handlers/queue";
-import { createTestingTicket, getTicketByChannel } from "../handlers/ticket";
+import { createTestingTicket } from "../handlers/ticket";
 import { logCommand } from "../handlers/audit";
 
 export const pullCommand = {
@@ -43,11 +41,8 @@ export const pullCommand = {
         .setDescription("The region queue to pull from")
         .setRequired(true)
         .addChoices(
-          { name: "NA", value: "NA" },
-          { name: "EU", value: "EU" },
-          { name: "AS", value: "AS" },
-          { name: "SA", value: "SA" },
-          { name: "AU", value: "AU" }
+          { name: "EU/NA", value: "EU/NA" },
+          { name: "AS/AU", value: "AS/AU" }
         )
     ),
 
@@ -59,7 +54,7 @@ export const pullCommand = {
     const canTest = await isVoluntaryTester(member, interaction.guildId!, gamemode);
     if (!canTest) {
       await interaction.reply({
-        content: `❌ You need the **@Voluntary Tester** and **@${GAMEMODES[gamemode as Gamemode]}Tester** roles to pull testees.`,
+        content: `❌ You need the **@Voluntary Tester** and **@${GAMEMODES[gamemode as Gamemode]} Tester** roles to pull testees.`,
         ephemeral: true,
       });
       return;
@@ -82,8 +77,7 @@ export const pullCommand = {
 
     if (isTester.length === 0) {
       await interaction.editReply({
-        content:
-          "❌ You are not an active tester in this queue. Use `/start` first.",
+        content: "❌ You are not an active tester in this queue. Use `/start` first.",
       });
       return;
     }
@@ -105,9 +99,7 @@ export const pullCommand = {
         .fetch(existingTicket[0].channelId)
         .catch(() => null)) as TextChannel | null;
       if (channel) {
-        await channel
-          .delete("Tester skipped testee")
-          .catch(() => null);
+        await channel.delete("Tester skipped testee").catch(() => null);
       }
 
       await db
@@ -130,8 +122,7 @@ export const pullCommand = {
 
     if (!testee) {
       await interaction.editReply({
-        content:
-          "❌ Could not find the next testee in the server. They may have left.",
+        content: "❌ Could not find the next testee in the server. They may have left.",
       });
       return;
     }

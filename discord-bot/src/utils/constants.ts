@@ -16,11 +16,8 @@ export type Gamemode = keyof typeof GAMEMODES;
 export const GAMEMODE_KEYS = Object.keys(GAMEMODES) as Gamemode[];
 
 export const REGIONS = {
-  NA: "North America",
-  EU: "Europe",
-  AS: "Asia",
-  SA: "South America",
-  AU: "Australia",
+  "EU/NA": "EU/NA",
+  "AS/AU": "AS/AU",
 } as const;
 
 export type Region = keyof typeof REGIONS;
@@ -33,7 +30,9 @@ export const TIERS = [
   "HT4",
   "LT3",
   "HT3",
+  "LT2",
   "HT2",
+  "LT1",
   "HT1",
 ] as const;
 
@@ -46,7 +45,9 @@ export const TIER_LABELS: Record<Tier, string> = {
   HT4: "High Tier 4",
   LT3: "Low Tier 3",
   HT3: "High Tier 3",
+  LT2: "Low Tier 2",
   HT2: "High Tier 2",
+  LT1: "Low Tier 1",
   HT1: "High Tier 1",
 };
 
@@ -57,9 +58,13 @@ export const TIER_ORDER: Record<Tier, number> = {
   HT4: 3,
   LT3: 4,
   HT3: 5,
-  HT2: 6,
-  HT1: 7,
+  LT2: 6,
+  HT2: 7,
+  LT1: 8,
+  HT1: 9,
 };
+
+export const HT3_PLUS_TIERS: Tier[] = ["HT3", "LT2", "HT2", "LT1", "HT1"];
 
 export const STAFF_ROLES = [
   "helper",
@@ -111,12 +116,14 @@ export const CONFIG_KEYS = {
   HT3_CATEGORY: "ht3_category",
   TRANSCRIPT_CHANNEL: "transcript_channel",
   AUDIT_LOG_CHANNEL: "audit_log_channel",
+  RESULTS_CHANNEL: "results",
 } as const;
 
 export const CHANNEL_TYPES = {
   transcript: "transcript",
   audit_log: "audit_log",
   waitlist: "waitlist",
+  results: "results",
 } as const;
 
 export const EMBED_COLORS = {

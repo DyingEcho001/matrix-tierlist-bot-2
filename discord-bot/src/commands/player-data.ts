@@ -39,7 +39,7 @@ export const playerDataCommand = {
     const member = interaction.member as GuildMember;
     if (!(await requireStaff(interaction, "helper"))) return;
 
-    await interaction.deferReply();
+    await interaction.deferReply({ ephemeral: true });
 
     const targetUser = interaction.options.getUser("user");
     const ignQuery = interaction.options.getString("ign");

@@ -9,9 +9,7 @@ import {
   ButtonInteraction,
   ModalSubmitInteraction,
   GuildMember,
-  PermissionFlagsBits,
   TextChannel,
-  ChannelType,
 } from "discord.js";
 import { commands } from "../commands";
 import { db } from "../database";
@@ -20,12 +18,11 @@ import {
   queueMembers,
   tickets,
   gamemodeRoles,
-  tiers,
   categoryConfig,
 } from "../database/schema";
 import { eq, and } from "drizzle-orm";
-import { getOrCreateQueue, addToQueue, updateQueueEmbed } from "../handlers/queue";
-import { createTestingTicket, getTicketByChannel } from "../handlers/ticket";
+import { getOrCreateQueue, addToQueue } from "../handlers/queue";
+import { getTicketByChannel } from "../handlers/ticket";
 import { GAMEMODES, Gamemode } from "../utils/constants";
 
 export function registerInteractionEvent(client: Client): void {
@@ -79,9 +76,9 @@ async function handleButtonInteraction(
 
     const regionInput = new TextInputBuilder()
       .setCustomId("region")
-      .setLabel("Your Region (NA / EU / AS / SA / AU)")
+      .setLabel("Your Region (EU/NA or AS/AU)")
       .setStyle(TextInputStyle.Short)
-      .setPlaceholder("NA, EU, AS, SA, or AU")
+      .setPlaceholder("EU/NA or AS/AU")
       .setRequired(true);
 
     const serverInput = new TextInputBuilder()
@@ -105,20 +102,37 @@ async function handleButtonInteraction(
     const gamemode = customId.replace("join_gamemode_", "") as Gamemode;
     const member = interaction.member as GuildMember;
 
+    const playerData = await db
+      .select()
+      .from(players)
+      .where(eq(players.discordId, member.id))
+      .limit(1);
+
+    if (!playerData[0]) {
+      await interaction.reply({
+        content: `❌ You need to register your profile first before joining a waitlist. Click **Register / Update Profile**.`,
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const playerRegion = playerData[0].region;
+
     const gamemodeRoleRow = await db
       .select()
       .from(gamemodeRoles)
       .where(
         and(
           eq(gamemodeRoles.guildId, interaction.guildId!),
-          eq(gamemodeRoles.gamemode, gamemode)
+          eq(gamemodeRoles.gamemode, gamemode),
+          eq(gamemodeRoles.region, playerRegion)
         )
       )
       .limit(1);
 
     if (!gamemodeRoleRow[0]) {
       await interaction.reply({
-        content: `❌ No waitlist role configured for **${GAMEMODES[gamemode] ?? gamemode}** yet. Ask an admin to set one up with \`/gamemode-role\`.`,
+        content: `❌ No waitlist role configured for **${GAMEMODES[gamemode] ?? gamemode}** (${playerRegion}) yet. Ask an admin to set one up with \`/waitlist-role-set\`.`,
         ephemeral: true,
       });
       return;
@@ -129,13 +143,13 @@ async function handleButtonInteraction(
     if (member.roles.cache.has(roleId)) {
       await member.roles.remove(roleId, "Left gamemode waitlist");
       await interaction.reply({
-        content: `✅ You have been removed from the **${GAMEMODES[gamemode]}** waitlist.`,
+        content: `✅ You have been removed from the **${GAMEMODES[gamemode]}** (${playerRegion}) waitlist.`,
         ephemeral: true,
       });
     } else {
       await member.roles.add(roleId, "Joined gamemode waitlist");
       await interaction.reply({
-        content: `✅ You now have the **${GAMEMODES[gamemode]}** waitlist role. You'll be pinged when a tester is available!`,
+        content: `✅ You now have the **${GAMEMODES[gamemode]}** (${playerRegion}) waitlist role. You'll be pinged when a tester is available!`,
         ephemeral: true,
       });
     }
@@ -328,19 +342,27 @@ async function handleModalSubmit(
     const regionRaw = interaction.fields
       .getTextInputValue("region")
       .trim()
-      .toUpperCase();
-    const preferredServer = interaction.fields
-      .getTextInputValue("preferred_server")
-      .trim();
+      .toUpperCase()
+      .replace(" ", "/");
 
-    const validRegions = ["NA", "EU", "AS", "SA", "AU"];
-    if (!validRegions.includes(regionRaw)) {
+    const normalizedRegion =
+      regionRaw === "EU/NA" || regionRaw === "EUNA" || regionRaw === "EU" || regionRaw === "NA"
+        ? "EU/NA"
+        : regionRaw === "AS/AU" || regionRaw === "ASAU" || regionRaw === "AS" || regionRaw === "AU"
+        ? "AS/AU"
+        : null;
+
+    if (!normalizedRegion) {
       await interaction.reply({
-        content: `❌ Invalid region **${regionRaw}**. Must be one of: NA, EU, AS, SA, AU.`,
+        content: `❌ Invalid region **"${regionRaw}"**. Please enter **EU/NA** or **AS/AU**.`,
         ephemeral: true,
       });
       return;
     }
+
+    const preferredServer = interaction.fields
+      .getTextInputValue("preferred_server")
+      .trim();
 
     await db
       .insert(players)
@@ -348,7 +370,7 @@ async function handleModalSubmit(
         discordId: interaction.user.id,
         discordUsername: interaction.user.username,
         ign,
-        region: regionRaw,
+        region: normalizedRegion,
         preferredServer,
       })
       .onConflictDoUpdate({
@@ -356,7 +378,7 @@ async function handleModalSubmit(
         set: {
           discordUsername: interaction.user.username,
           ign,
-          region: regionRaw,
+          region: normalizedRegion,
           preferredServer,
           updatedAt: new Date(),
         },
@@ -366,7 +388,7 @@ async function handleModalSubmit(
       content: [
         `✅ Profile registered/updated!`,
         `**IGN:** ${ign}`,
-        `**Region:** ${regionRaw}`,
+        `**Region:** ${normalizedRegion}`,
         `**Preferred Server:** ${preferredServer}`,
         "",
         `You can now join a queue by clicking a gamemode button.`,

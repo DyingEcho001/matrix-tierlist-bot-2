@@ -10,6 +10,7 @@ export const commands = new Collection<string, Command>();
 
 import { startCommand } from "./start";
 import { pullCommand } from "./pull";
+import { endCommand } from "./end";
 import { closeCommand } from "./close";
 import { leaveCommand } from "./leave";
 import { evalCommand } from "./eval";
@@ -26,17 +27,22 @@ import { roleCommand } from "./role";
 import { joinTesterPoolCommand } from "./join-tester-pool";
 import { staffRoleCommand } from "./staff-role-assign";
 import { tierRoleAssignCommand } from "./tier-role-assign";
-import { gamemodeRoleCommand } from "./gamemode-role";
+import { waitlistRoleSetCommand } from "./waitlist-role-set";
 import { testerRoleCommand } from "./tester-role";
 import { setChannelCommand } from "./set-channel";
 import { setCategoryCommand } from "./set-category";
-import { waitlistPanelSendCommand } from "./waitlist-panel-send";
+import { registrationPanelSendCommand } from "./registration-panel-send";
 import { waitlistPostCommand } from "./waitlist-post";
 import { voluntaryTesterRoleCommand } from "./voluntary-tester-role";
+import { resetCooldownCommand } from "./reset-cooldown";
+import { cooldownAddCommand } from "./cooldown-add";
+import { shameroleAssignCommand } from "./shamerole-assign";
+import { sendEmbedCommand } from "./send-embed";
 
 const allCommands: Command[] = [
   startCommand,
   pullCommand,
+  endCommand,
   closeCommand,
   leaveCommand,
   evalCommand,
@@ -53,13 +59,17 @@ const allCommands: Command[] = [
   joinTesterPoolCommand,
   staffRoleCommand,
   tierRoleAssignCommand,
-  gamemodeRoleCommand,
+  waitlistRoleSetCommand,
   testerRoleCommand,
   setChannelCommand,
   setCategoryCommand,
-  waitlistPanelSendCommand,
+  registrationPanelSendCommand,
   waitlistPostCommand,
   voluntaryTesterRoleCommand,
+  resetCooldownCommand,
+  cooldownAddCommand,
+  shameroleAssignCommand,
+  sendEmbedCommand,
 ];
 
 for (const cmd of allCommands) {

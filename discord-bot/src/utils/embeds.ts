@@ -3,13 +3,11 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  Guild,
   GuildMember,
   User,
 } from "discord.js";
 import {
   GAMEMODES,
-  REGIONS,
   TIER_LABELS,
   EMBED_COLORS,
   Gamemode,
@@ -139,7 +137,8 @@ export function buildQueueClosedEmbed(params: {
         `Last testing session: ${lastSessionText}`,
       ].join("\n")
     )
-    .setColor(EMBED_COLORS.error);
+    .setColor(EMBED_COLORS.error)
+    .setFooter({ text: `${GAMEMODES[gamemode]} | ${region}` });
 }
 
 export function buildTicketInfoEmbed(params: {
@@ -147,19 +146,15 @@ export function buildTicketInfoEmbed(params: {
   ign: string;
   region: string;
   preferredServer: string;
+  isPremium?: boolean | null;
   previousTier?: string | null;
-  previousTest?: Date | null;
 }): EmbedBuilder {
-  const { testee, ign, region, preferredServer, previousTier, previousTest } =
-    params;
+  const { testee, ign, region, preferredServer, isPremium, previousTier } = params;
 
   const displayName =
     testee instanceof GuildMember ? testee.displayName : testee.username;
   const id = testee instanceof GuildMember ? testee.id : testee.id;
-
-  const previousTestText = previousTest
-    ? `<t:${Math.floor(previousTest.getTime() / 1000)}:f>`
-    : "Never";
+  const accountType = isPremium === false ? "Cracked" : "Premium";
 
   return new EmbedBuilder()
     .setTitle(`${displayName}'s Information`)
@@ -169,14 +164,12 @@ export function buildTicketInfoEmbed(params: {
         `**Region:** ${region}`,
         `**Server:** ${preferredServer}`,
         `**Username:** ${ign}`,
+        `**Account:** ${accountType}`,
         `**Previous Rank:** ${previousTier ?? "Unranked"}`,
-        `**Previous Test:** ${previousTestText}`,
       ].join("\n")
     )
     .setColor(EMBED_COLORS.primary)
-    .setThumbnail(
-      `https://visage.surgeplay.com/bust/128/${ign}`
-    );
+    .setThumbnail(`https://visage.surgeplay.com/bust/128/${ign}`);
 }
 
 export function buildTestResultEmbed(params: {
@@ -185,30 +178,38 @@ export function buildTestResultEmbed(params: {
   gamemode: Gamemode;
   tier: Tier;
   cooldownDays: number;
-  isHT3?: boolean;
 }): EmbedBuilder {
-  const { testee, tester, gamemode, tier, cooldownDays, isHT3 } = params;
+  const { testee, tester, gamemode, tier, cooldownDays } = params;
 
-  const testeeId =
-    testee instanceof GuildMember ? testee.id : testee.id;
-  const testerId =
-    tester instanceof GuildMember ? tester.id : tester.id;
+  const testeeId = testee instanceof GuildMember ? testee.id : testee.id;
+  const testerId = tester instanceof GuildMember ? tester.id : tester.id;
+  const testeeTag = testee instanceof GuildMember ? testee.displayName : testee.username;
+  const testerTag = tester instanceof GuildMember ? tester.displayName : tester.username;
+
+  const cooldownExpires = cooldownDays > 0
+    ? `<t:${Math.floor((Date.now() + cooldownDays * 24 * 60 * 60 * 1000) / 1000)}:R>`
+    : "No cooldown";
+
+  const tierColor = tier.startsWith("HT") ? EMBED_COLORS.success : EMBED_COLORS.primary;
 
   return new EmbedBuilder()
-    .setTitle(`Test Result — ${GAMEMODES[gamemode]}`)
-    .setDescription(
-      [
-        `**Player:** <@${testeeId}>`,
-        `**Tester:** <@${testerId}>`,
-        `**Gamemode:** ${GAMEMODES[gamemode]}`,
-        `**Result:** ${TIER_LABELS[tier]}`,
-        `**Cooldown:** ${cooldownDays} days`,
-        "",
-        `*Testing completed <t:${Math.floor(Date.now() / 1000)}:R>*`,
-      ].join("\n")
+    .setTitle(`📋 Test Result — ${GAMEMODES[gamemode]}`)
+    .setColor(tierColor)
+    .addFields(
+      { name: "👤 Player", value: `<@${testeeId}> (${testeeTag})`, inline: true },
+      { name: "🎮 Gamemode", value: GAMEMODES[gamemode], inline: true },
+      { name: "\u200B", value: "\u200B", inline: true },
+      { name: "🏆 Tier Given", value: `**${tier}** — ${TIER_LABELS[tier]}`, inline: true },
+      { name: "⚔️ Tested By", value: `<@${testerId}> (${testerTag})`, inline: true },
+      { name: "\u200B", value: "\u200B", inline: true },
+      {
+        name: "⏳ Cooldown",
+        value: cooldownDays > 0 ? `${cooldownDays} days — expires ${cooldownExpires}` : "No cooldown",
+        inline: false,
+      }
     )
-    .setColor(EMBED_COLORS.success)
-    .setTimestamp();
+    .setTimestamp()
+    .setFooter({ text: `Tested at` });
 }
 
 export function buildPlayerDataEmbed(params: {
@@ -266,7 +267,7 @@ export function buildPlayerDataEmbed(params: {
         value: [
           `**IGN:** ${player.ign}`,
           `**Region:** ${player.region}`,
-          `**Account:** ${player.isPremium ? "Premium" : "Cracked"}`,
+          `**Account:** ${player.isPremium === false ? "Cracked" : "Premium"}`,
           player.uuid ? `**UUID:** ${player.uuid}` : "",
         ]
           .filter(Boolean)
@@ -278,7 +279,7 @@ export function buildPlayerDataEmbed(params: {
   if (testerStats) {
     embed.addFields({
       name: "Tester Statistics",
-      value: `**All-Time Tests:** ${testerStats.allTimeTests} | **Monthly:** ${testerStats.monthlyTests}`,
+      value: `**All-Time Tests:** ${testerStats.allTimeTests ?? 0} | **Monthly:** ${testerStats.monthlyTests ?? 0}`,
       inline: false,
     });
   }
@@ -296,7 +297,7 @@ export function buildPlayerDataEmbed(params: {
       : "Unknown";
 
     embed.addFields({
-      name: "Active Restriction",
+      name: "⛔ Active Restriction",
       value: [
         `**Restricted:** <t:${Math.floor(restriction.createdAt.getTime() / 1000)}:f>`,
         `**Expires:** ${expiresText}`,

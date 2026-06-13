@@ -4,7 +4,6 @@ import {
   GuildMember,
   PermissionFlagsBits,
   TextChannel,
-  CategoryChannel,
   ChannelType,
 } from "discord.js";
 import { db } from "../database";
@@ -19,7 +18,7 @@ import {
 } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import { buildTicketInfoEmbed, buildTestResultEmbed } from "../utils/embeds";
-import { GAMEMODES, Gamemode, Tier, COOLDOWNS, TIER_LABELS } from "../utils/constants";
+import { GAMEMODES, Gamemode, Tier, COOLDOWNS, HT3_PLUS_TIERS } from "../utils/constants";
 
 export async function getCategoryId(
   guildId: string,
@@ -83,12 +82,6 @@ export async function createTestingTicket(params: {
 
   const previousTier = previousTierRow[0]?.tier ?? null;
 
-  const previousCooldown = await db
-    .select()
-    .from(cooldowns)
-    .where(and(eq(cooldowns.discordId, testee.id), eq(cooldowns.gamemode, gamemode)))
-    .limit(1);
-
   const channelName = `${gamemode.replace(/_/g, "-")}-${testee.user.username
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "")}`.slice(0, 100);
@@ -131,7 +124,7 @@ export async function createTestingTicket(params: {
       ],
     });
 
-    const [ticket] = await db
+    await db
       .insert(tickets)
       .values({
         type,
@@ -146,12 +139,12 @@ export async function createTestingTicket(params: {
       .returning();
 
     const infoEmbed = buildTicketInfoEmbed({
-      testee: testee,
+      testee,
       ign: playerInfo?.ign ?? testee.user.username,
       region: playerInfo?.region ?? region,
       preferredServer: playerInfo?.preferredServer ?? "Unknown",
+      isPremium: playerInfo?.isPremium,
       previousTier,
-      previousTest: previousCooldown[0]?.createdAt ?? null,
     });
 
     await channel.send({
@@ -175,7 +168,7 @@ export async function closeTicket(params: {
 }): Promise<void> {
   const { client, ticket, tier, closedBy, skipCooldown = false } = params;
 
-  const isHT3Plus = ["HT3", "HT2", "HT1"].includes(tier);
+  const isHT3Plus = HT3_PLUS_TIERS.includes(tier);
   const cooldownMs = isHT3Plus ? COOLDOWNS.ht3 : COOLDOWNS.normal;
   const cooldownDays = isHT3Plus ? 15 : 5;
 
@@ -202,57 +195,42 @@ export async function closeTicket(params: {
       });
   }
 
-  await db
-    .update(testerStats)
-    .set({
-      allTimeTests: db.$count(testerStats, eq(testerStats.discordId, ticket.testerId)),
-      updatedAt: new Date(),
-    })
-    .where(eq(testerStats.discordId, ticket.testerId))
-    .catch(() => null);
-
-  await db
-    .insert(testerStats)
-    .values({ discordId: ticket.testerId, allTimeTests: 1, monthlyTests: 1 })
-    .onConflictDoUpdate({
-      target: [testerStats.discordId],
-      set: {
-        allTimeTests: db.$count(testerStats, eq(testerStats.discordId, ticket.testerId)),
-        monthlyTests: db.$count(testerStats, eq(testerStats.discordId, ticket.testerId)),
-        updatedAt: new Date(),
-      },
-    })
-    .catch(() => null);
-
   try {
+    const tester = await client.users.fetch(ticket.testerId).catch(() => null);
+    const testee = await client.users.fetch(ticket.testeeId).catch(() => null);
+
+    if (tester && testee) {
+      const resultEmbed = buildTestResultEmbed({
+        testee,
+        tester,
+        gamemode: ticket.gamemode as Gamemode,
+        tier,
+        cooldownDays: skipCooldown ? 0 : cooldownDays,
+      });
+
+      const resultsChannelId = await getChannelId(ticket.guildId, "results");
+      if (resultsChannelId) {
+        const resultsChannel = (await client.channels
+          .fetch(resultsChannelId)
+          .catch(() => null)) as TextChannel | null;
+        if (resultsChannel) {
+          await resultsChannel.send({
+            content: `<@${ticket.testeeId}>`,
+            embeds: [resultEmbed],
+          });
+        }
+      }
+    }
+
     const channel = (await client.channels
       .fetch(ticket.channelId)
       .catch(() => null)) as TextChannel | null;
 
     if (channel) {
-      const tester = await client.users.fetch(ticket.testerId).catch(() => null);
-      const testee = await client.users.fetch(ticket.testeeId).catch(() => null);
-
-      if (tester && testee) {
-        const resultEmbed = buildTestResultEmbed({
-          testee,
-          tester,
-          gamemode: ticket.gamemode as Gamemode,
-          tier,
-          cooldownDays: skipCooldown ? 0 : cooldownDays,
-        });
-
-        await channel.send({
-          content: `<@${ticket.testeeId}>`,
-          embeds: [resultEmbed],
-        });
-      }
-
       await sendTranscript(client, ticket, channel);
-
       setTimeout(async () => {
         await channel.delete("Ticket closed").catch(() => null);
-      }, 5000);
+      }, 3000);
     }
   } catch (err) {
     console.error("Error closing ticket:", err);
@@ -262,6 +240,36 @@ export async function closeTicket(params: {
     .update(tickets)
     .set({ status: "closed", tierGiven: tier, closedBy, closedAt: new Date() })
     .where(eq(tickets.id, ticket.id));
+}
+
+export async function sendResultToChannel(params: {
+  client: Client;
+  guildId: string;
+  testeeId: string;
+  testerId: string;
+  gamemode: Gamemode;
+  tier: Tier;
+  cooldownDays: number;
+}): Promise<void> {
+  const { client, guildId, testeeId, testerId, gamemode, tier, cooldownDays } = params;
+  try {
+    const resultsChannelId = await getChannelId(guildId, "results");
+    if (!resultsChannelId) return;
+
+    const resultsChannel = (await client.channels
+      .fetch(resultsChannelId)
+      .catch(() => null)) as TextChannel | null;
+    if (!resultsChannel) return;
+
+    const tester = await client.users.fetch(testerId).catch(() => null);
+    const testee = await client.users.fetch(testeeId).catch(() => null);
+    if (!tester || !testee) return;
+
+    const resultEmbed = buildTestResultEmbed({ testee, tester, gamemode, tier, cooldownDays });
+    await resultsChannel.send({ content: `<@${testeeId}>`, embeds: [resultEmbed] });
+  } catch (err) {
+    console.error("Failed to send result to results channel:", err);
+  }
 }
 
 export async function sendTranscript(

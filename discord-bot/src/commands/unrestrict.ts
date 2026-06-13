@@ -5,7 +5,7 @@ import {
   GuildMember,
 } from "discord.js";
 import { db } from "../database";
-import { restrictions, tiers, staffRoles } from "../database/schema";
+import { restrictions, tiers, shameRoles } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import { requireStaff } from "../utils/permissions";
 import { logCommand } from "../handlers/audit";
@@ -80,11 +80,11 @@ export const unrestrictCommand = {
     if (targetMember) {
       const shameRoleRow = await db
         .select()
-        .from(staffRoles)
+        .from(shameRoles)
         .where(
           and(
-            eq(staffRoles.guildId, interaction.guildId!),
-            eq(staffRoles.staffRole, restriction.type as any)
+            eq(shameRoles.guildId, interaction.guildId!),
+            eq(shameRoles.category, restriction.type)
           )
         )
         .limit(1);

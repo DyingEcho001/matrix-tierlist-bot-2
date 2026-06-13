@@ -7,26 +7,16 @@ import {
 } from "discord.js";
 import { db } from "../database";
 import { queues, channelConfig } from "../database/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { GAMEMODE_KEYS, GAMEMODES, Gamemode } from "../utils/constants";
 import { requireStaff } from "../utils/permissions";
-import {
-  buildQueueClosedEmbed,
-  buildQueueOpenEmbed,
-  buildQueueOpenRow,
-} from "../utils/embeds";
-import {
-  getOrCreateQueue,
-  getQueueMembers,
-  getQueueTesters,
-  updateQueueEmbed,
-} from "../handlers/queue";
+import { getOrCreateQueue, updateQueueEmbed } from "../handlers/queue";
 import { logCommand } from "../handlers/audit";
 
 export const waitlistPostCommand = {
   data: new SlashCommandBuilder()
     .setName("waitlist-post")
-    .setDescription("Post a queue embed for a gamemode/region (Manager only)")
+    .setDescription("Assign and post a queue embed for a gamemode/region (Manager only)")
     .setDefaultMemberPermissions(null)
     .addStringOption((o) =>
       o
@@ -43,11 +33,8 @@ export const waitlistPostCommand = {
         .setDescription("Region")
         .setRequired(true)
         .addChoices(
-          { name: "NA", value: "NA" },
-          { name: "EU", value: "EU" },
-          { name: "AS", value: "AS" },
-          { name: "SA", value: "SA" },
-          { name: "AU", value: "AU" }
+          { name: "EU/NA", value: "EU/NA" },
+          { name: "AS/AU", value: "AS/AU" }
         )
     )
     .addChannelOption((o) =>

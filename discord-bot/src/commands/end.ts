@@ -5,22 +5,22 @@ import {
   GuildMember,
 } from "discord.js";
 import { db } from "../database";
-import { queues, queueTesters } from "../database/schema";
+import { queues, queueTesters, queueMembers } from "../database/schema";
 import { eq, and } from "drizzle-orm";
-import { GAMEMODE_KEYS, GAMEMODES, REGION_KEYS, REGIONS } from "../utils/constants";
+import { GAMEMODE_KEYS, GAMEMODES, Gamemode } from "../utils/constants";
 import { isVoluntaryTester } from "../utils/permissions";
 import { getOrCreateQueue, updateQueueEmbed } from "../handlers/queue";
 import { logCommand } from "../handlers/audit";
 
-export const startCommand = {
+export const endCommand = {
   data: new SlashCommandBuilder()
-    .setName("start")
-    .setDescription("Open a testing queue for a specific gamemode and region")
+    .setName("end")
+    .setDescription("Close the testing queue for a gamemode and region")
     .setDefaultMemberPermissions(null)
     .addStringOption((o) =>
       o
         .setName("gamemode")
-        .setDescription("The gamemode to open a queue for")
+        .setDescription("The gamemode queue to close")
         .setRequired(true)
         .addChoices(
           ...GAMEMODE_KEYS.map((gm) => ({ name: GAMEMODES[gm], value: gm }))
@@ -29,7 +29,7 @@ export const startCommand = {
     .addStringOption((o) =>
       o
         .setName("region")
-        .setDescription("The region for this queue")
+        .setDescription("The region queue to close")
         .setRequired(true)
         .addChoices(
           { name: "EU/NA", value: "EU/NA" },
@@ -45,7 +45,7 @@ export const startCommand = {
     const canTest = await isVoluntaryTester(member, interaction.guildId!, gamemode);
     if (!canTest) {
       await interaction.reply({
-        content: `❌ You need the **@Voluntary Tester** role and the **@${GAMEMODES[gamemode as keyof typeof GAMEMODES]} Tester** role to open a queue.`,
+        content: `❌ You need the **@Voluntary Tester** and **@${GAMEMODES[gamemode as Gamemode]} Tester** roles to close a queue.`,
         ephemeral: true,
       });
       return;
@@ -55,7 +55,7 @@ export const startCommand = {
 
     const queue = await getOrCreateQueue(gamemode, region);
 
-    const alreadyTesting = await db
+    const isTester = await db
       .select()
       .from(queueTesters)
       .where(
@@ -66,39 +66,51 @@ export const startCommand = {
       )
       .limit(1);
 
-    if (alreadyTesting.length > 0) {
+    if (isTester.length === 0) {
       await interaction.editReply({
-        content: "❌ You are already in this queue as a tester.",
+        content: "❌ You are not an active tester in this queue.",
       });
       return;
     }
-
-    if (!queue.channelId) {
-      await interaction.editReply({
-        content: "❌ No channel has been assigned to this queue yet. Ask an admin to use `/waitlist-post` to set it up first.",
-      });
-      return;
-    }
-
-    await db.insert(queueTesters).values({
-      queueId: queue.id,
-      discordId: member.id,
-    }).onConflictDoNothing();
 
     await db
-      .update(queues)
-      .set({ isActive: true, updatedAt: new Date() })
-      .where(eq(queues.id, queue.id));
+      .delete(queueTesters)
+      .where(
+        and(
+          eq(queueTesters.queueId, queue.id),
+          eq(queueTesters.discordId, member.id)
+        )
+      );
 
-    const updatedQueue = { ...queue, isActive: true };
-    await updateQueueEmbed(client, updatedQueue as typeof queue);
+    const remainingTesters = await db
+      .select()
+      .from(queueTesters)
+      .where(eq(queueTesters.queueId, queue.id));
 
-    await interaction.editReply({
-      content: `✅ Queue opened for **${GAMEMODES[gamemode as keyof typeof GAMEMODES]}** (${region}). Queue embed updated in <#${queue.channelId}>.`,
-    });
+    if (remainingTesters.length === 0) {
+      await db
+        .delete(queueMembers)
+        .where(eq(queueMembers.queueId, queue.id));
+
+      await db
+        .update(queues)
+        .set({ isActive: false, lastSessionEnd: new Date(), updatedAt: new Date() })
+        .where(eq(queues.id, queue.id));
+
+      const closedQueue = { ...queue, isActive: false, lastSessionEnd: new Date() };
+      await updateQueueEmbed(client, closedQueue as typeof queue);
+
+      await interaction.editReply({
+        content: `✅ Queue for **${GAMEMODES[gamemode as Gamemode]}** (${region}) has been closed. All members cleared.`,
+      });
+    } else {
+      await interaction.editReply({
+        content: `✅ You have left the tester pool. ${remainingTesters.length} tester(s) still active — queue remains open.`,
+      });
+    }
 
     await logCommand(client, {
-      command: "start",
+      command: "end",
       user: member,
       guildId: interaction.guildId!,
       channelId: interaction.channelId,

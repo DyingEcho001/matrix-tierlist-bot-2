@@ -5,7 +5,7 @@ import {
   GuildMember,
 } from "discord.js";
 import { db } from "../database";
-import { tiers, cooldowns, players } from "../database/schema";
+import { tiers, cooldowns } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import {
   TIERS,
@@ -14,12 +14,11 @@ import {
   GAMEMODES,
   Gamemode,
   COOLDOWNS,
-  TIER_LABELS,
+  HT3_PLUS_TIERS,
 } from "../utils/constants";
 import { requireStaff } from "../utils/permissions";
-import { buildTestResultEmbed } from "../utils/embeds";
+import { sendResultToChannel, incrementTesterStats } from "../handlers/ticket";
 import { logCommand } from "../handlers/audit";
-import { incrementTesterStats } from "../handlers/ticket";
 
 export const rankCommand = {
   data: new SlashCommandBuilder()
@@ -64,9 +63,9 @@ export const rankCommand = {
     const gamemode = interaction.options.getString("gamemode", true) as Gamemode;
     const ign = interaction.options.getString("ign");
 
-    await interaction.deferReply();
+    await interaction.deferReply({ ephemeral: true });
 
-    const isHT3Plus = ["HT3", "HT2", "HT1"].includes(tier);
+    const isHT3Plus = HT3_PLUS_TIERS.includes(tier);
     const cooldownMs = isHT3Plus ? COOLDOWNS.ht3 : COOLDOWNS.normal;
     const cooldownDays = isHT3Plus ? 15 : 5;
 
@@ -92,19 +91,18 @@ export const rankCommand = {
         set: { expiresAt, createdAt: new Date() },
       });
 
-    await incrementTesterStats(member.id);
-
-    const resultEmbed = buildTestResultEmbed({
-      testee: targetUser,
-      tester: member.user,
+    await sendResultToChannel({
+      client,
+      guildId: interaction.guildId!,
+      testeeId: targetUser.id,
+      testerId: member.id,
       gamemode,
       tier,
       cooldownDays,
     });
 
     await interaction.editReply({
-      content: `<@${targetUser.id}>`,
-      embeds: [resultEmbed],
+      content: `✅ Ranked <@${targetUser.id}> as **${tier}** in **${GAMEMODES[gamemode]}**. Result posted to the results channel.`,
     });
 
     await logCommand(client, {

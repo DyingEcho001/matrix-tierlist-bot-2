@@ -183,11 +183,12 @@ export const gamemodeRoles = pgTable(
     id: serial("id").primaryKey(),
     guildId: text("guild_id").notNull(),
     gamemode: text("gamemode").notNull(),
+    region: text("region").notNull().default(""),
     roleId: text("role_id").notNull(),
     updatedAt: timestamp("updated_at").defaultNow(),
   },
   (t) => [
-    unique("gamemode_roles_guild_gamemode_unique").on(t.guildId, t.gamemode),
+    unique("gamemode_roles_guild_gamemode_region_unique").on(t.guildId, t.gamemode, t.region),
   ]
 );
 
@@ -277,4 +278,18 @@ export const voluntaryTesterRole = pgTable(
     roleId: text("role_id").notNull(),
     updatedAt: timestamp("updated_at").defaultNow(),
   }
+);
+
+export const shameRoles = pgTable(
+  "shame_roles",
+  {
+    id: serial("id").primaryKey(),
+    guildId: text("guild_id").notNull(),
+    category: text("category").notNull(),
+    roleId: text("role_id").notNull(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (t) => [
+    unique("shame_roles_guild_category_unique").on(t.guildId, t.category),
+  ]
 );
