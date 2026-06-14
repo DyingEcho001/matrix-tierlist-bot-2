@@ -89,7 +89,7 @@ export function buildQueueOpenEmbed(params: {
     .setTitle("Tester(s) Available!")
     .setDescription(
       [
-        "🕐 The queue updates every 1 minute.",
+        "The queue updates every 1 minute.",
         "Use `/leave` if you wish to be removed from the waitlist or queue.",
         "",
         "**Queue:**",
@@ -101,8 +101,9 @@ export function buildQueueOpenEmbed(params: {
     )
     .setColor(EMBED_COLORS.primary)
     .setFooter({
-      text: `${GAMEMODES[gamemode]} | ${region} | Updates every 1 min`,
-    });
+      text: `${GAMEMODES[gamemode]} | ${region} | Matrix tierlist Dev - DyingEcho`,
+    })
+    .setTimestamp();
 }
 
 export function buildQueueOpenRow(): ActionRowBuilder<ButtonBuilder> {
@@ -136,38 +137,44 @@ export function buildQueueClosedEmbed(params: {
       ].join("\n")
     )
     .setColor(EMBED_COLORS.error)
-    .setFooter({ text: `${GAMEMODES[gamemode]} | ${region}` });
+    .setFooter({ text: `${GAMEMODES[gamemode]} | ${region} | Matrix tierlist Dev - DyingEcho` })
+    .setTimestamp();
 }
 
 export function buildTicketInfoEmbed(params: {
   testee: GuildMember | User;
+  tester: GuildMember | User;
+  gamemode: string;
   ign: string;
   region: string;
   preferredServer: string;
   isPremium?: boolean | null;
   previousTier?: string | null;
 }): EmbedBuilder {
-  const { testee, ign, region, preferredServer, isPremium, previousTier } = params;
+  const { testee, tester, gamemode, ign, region, isPremium } = params;
 
-  const displayName =
-    testee instanceof GuildMember ? testee.displayName : testee.username;
-  const id = testee instanceof GuildMember ? testee.id : testee.id;
+  const testeeId = testee instanceof GuildMember ? testee.id : testee.id;
+  const testerId = tester instanceof GuildMember ? tester.id : tester.id;
   const accountType = isPremium === false ? "Cracked" : "Premium";
 
+  const gamemodeName =
+    GAMEMODES[gamemode as Gamemode] ?? gamemode;
+
   return new EmbedBuilder()
-    .setTitle(`${displayName}'s Information`)
-    .setDescription(
-      [
-        `**User:** <@${id}>`,
-        `**Region:** ${region}`,
-        `**Server:** ${preferredServer}`,
-        `**Username:** ${ign}`,
-        `**Account:** ${accountType}`,
-        `**Previous Rank:** ${previousTier ?? "Unranked"}`,
-      ].join("\n")
-    )
+    .setTitle("Tier Testing Session")
+    .setDescription("Tier Testing Session started. Have a good time testing in Matrix Tierlist")
     .setColor(EMBED_COLORS.primary)
-    .setThumbnail(`https://visage.surgeplay.com/bust/128/${ign}`);
+    .addFields(
+      { name: "Player", value: `<@${testeeId}>`, inline: true },
+      { name: "Username", value: ign, inline: true },
+      { name: "Gamemode", value: gamemodeName, inline: true },
+      { name: "Region", value: region, inline: true },
+      { name: "Account Type", value: accountType, inline: true },
+      { name: "Tester", value: `<@${testerId}>`, inline: true },
+    )
+    .setThumbnail(`https://visage.surgeplay.com/bust/128/${ign}`)
+    .setFooter({ text: "Matrix tierlist Dev - DyingEcho" })
+    .setTimestamp();
 }
 
 export function buildTestResultEmbed(params: {

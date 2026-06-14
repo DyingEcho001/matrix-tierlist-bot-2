@@ -140,6 +140,8 @@ export async function createTestingTicket(params: {
 
     const infoEmbed = buildTicketInfoEmbed({
       testee,
+      tester,
+      gamemode,
       ign: playerInfo?.ign ?? testee.user.username,
       region: playerInfo?.region ?? region,
       preferredServer: playerInfo?.preferredServer ?? "Unknown",
