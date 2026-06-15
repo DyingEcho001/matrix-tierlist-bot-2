@@ -32,7 +32,7 @@ export const statsCommand = {
     const member = interaction.member as GuildMember;
     const targetUser = interaction.options.getUser("user", true);
 
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ ephemeral: false });
 
     const statsRow = await db
       .select()
