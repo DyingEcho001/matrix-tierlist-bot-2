@@ -9,6 +9,7 @@ import { db } from "../database";
 import { commandBypasses } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import { logCommand } from "../handlers/audit";
+import { hasCommandBypass } from "../utils/permissions";
 
 export const bypassCommand = {
   data: new SlashCommandBuilder()
@@ -41,6 +42,14 @@ export const bypassCommand = {
     if (!member.permissions.has(PermissionFlagsBits.Administrator)) {
       await interaction.reply({
         content: "❌ Only administrators can use this command.",
+        ephemeral: true,
+      });
+      return;
+    }
+
+    if (await hasCommandBypass(member.id, interaction.guildId!)) {
+      await interaction.reply({
+        content: "❌ Bypass users cannot manage the bypass list.",
         ephemeral: true,
       });
       return;
