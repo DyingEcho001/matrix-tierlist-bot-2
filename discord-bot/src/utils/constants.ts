@@ -10,10 +10,41 @@ export const GAMEMODES = {
   sword: "Sword",
   uhc: "UHC",
   vanilla: "Vanilla",
+  spearmace: "SpearMace",
 } as const;
 
 export type Gamemode = keyof typeof GAMEMODES;
 export const GAMEMODE_KEYS = Object.keys(GAMEMODES) as Gamemode[];
+
+export const GAMEMODE_EMOJIS: Record<Gamemode, string> = {
+  nethpot:    "<:NETHOP:1516067844830527529>",
+  potion:     "<:Potion:1515671878029803530>",
+  mace:       "<:MACE:1515434532499619942>",
+  axe_shield: "<:AXE:1516066987615457372>",
+  smp:        "<:SMP:1463043580892287057>",
+  diamond_smp:"<:DIA_SMP:1515671730457153616>",
+  cart_pvp:   "<:TNT_CART:1515671953040474122>",
+  creeper:    "<:creeper:1516064576116887552>",
+  sword:      "⚔️",
+  uhc:        "<:UHC:1516067484179103856>",
+  vanilla:    "<:VANILLA:1516067734926917813>",
+  spearmace:  "<:spear:1516071546446151680>",
+};
+
+export const GAMEMODE_BUTTON_EMOJIS: Record<Gamemode, { id?: string; name: string } | string> = {
+  nethpot:    { id: "1516067844830527529", name: "NETHOP" },
+  potion:     { id: "1515671878029803530", name: "Potion" },
+  mace:       { id: "1515434532499619942", name: "MACE" },
+  axe_shield: { id: "1516066987615457372", name: "AXE" },
+  smp:        { id: "1463043580892287057", name: "SMP" },
+  diamond_smp:{ id: "1515671730457153616", name: "DIA_SMP" },
+  cart_pvp:   { id: "1515671953040474122", name: "TNT_CART" },
+  creeper:    { id: "1516064576116887552", name: "creeper" },
+  sword:      "⚔️",
+  uhc:        { id: "1516067484179103856", name: "UHC" },
+  vanilla:    { id: "1516067734926917813", name: "VANILLA" },
+  spearmace:  { id: "1516071546446151680", name: "spear" },
+};
 
 export const REGIONS = {
   "EU/NA": "EU/NA",
@@ -117,6 +148,8 @@ export const CONFIG_KEYS = {
   TRANSCRIPT_CHANNEL: "transcript_channel",
   AUDIT_LOG_CHANNEL: "audit_log_channel",
   RESULTS_CHANNEL: "results",
+  COMMANDS_CHANNEL: "commands",
+  REDEEM_CHANNEL: "redeem",
 } as const;
 
 export const CHANNEL_TYPES = {
@@ -124,6 +157,8 @@ export const CHANNEL_TYPES = {
   audit_log: "audit_log",
   waitlist: "waitlist",
   results: "results",
+  commands: "commands",
+  redeem: "redeem",
 } as const;
 
 export const EMBED_COLORS = {
@@ -135,3 +170,12 @@ export const EMBED_COLORS = {
   dark: 0x2b2d31,
   red_border: 0xed4245,
 } as const;
+
+export const REDEEM_REWARDS = [
+  { value: "lt3_cooldown_removal",  label: "LT3 & Below Cooldown Removal (10 tests)",    cost: 10 },
+  { value: "custom_role_7d",        label: "Custom Role — 7 Days (15 tests)",             cost: 15 },
+  { value: "ht3_cooldown_removal",  label: "HT3+ Cooldown Removal (30 tests)",            cost: 30 },
+  { value: "custom_head_emoji",     label: "Custom Minecraft Head Emoji — Permanent (45 tests)", cost: 45 },
+  { value: "veteran_tester",        label: "Veteran Tester (55 tests)",                   cost: 55 },
+  { value: "custom_role_permanent", label: "Custom Role of Your Choice — Permanent (80 tests)", cost: 80 },
+] as const;
