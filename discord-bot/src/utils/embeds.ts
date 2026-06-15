@@ -465,10 +465,11 @@ export function buildRedeemEmbed(params: {
   reward: string;
   testsCost: number;
   testsRemaining: number;
+  ign?: string | null;
 }): EmbedBuilder {
-  const { testerId, reward, testsCost, testsRemaining } = params;
+  const { testerId, reward, testsCost, testsRemaining, ign } = params;
 
-  return new EmbedBuilder()
+  const embed = new EmbedBuilder()
     .setTitle("Reward Redeemed")
     .setColor(EMBED_COLORS.primary)
     .addFields(
@@ -479,4 +480,10 @@ export function buildRedeemEmbed(params: {
     )
     .setFooter({ text: "Ping a Regulator or above to get your reward | Matrix tierlist Dev - DyingEcho" })
     .setTimestamp();
+
+  if (ign) {
+    embed.setThumbnail(`https://visage.surgeplay.com/bust/128/${ign}`);
+  }
+
+  return embed;
 }
