@@ -24,6 +24,7 @@ export const addTestsCommand = {
         .setDescription("Number of tests to add")
         .setRequired(true)
         .setMinValue(1)
+        .setMaxValue(10000)
     ),
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
