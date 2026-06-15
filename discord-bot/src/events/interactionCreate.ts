@@ -16,6 +16,7 @@ import { db } from "../database";
 import {
   players,
   queueMembers,
+  queueTesters,
   tickets,
   gamemodeRoles,
   categoryConfig,
@@ -23,11 +24,29 @@ import {
 import { eq, and } from "drizzle-orm";
 import { getOrCreateQueue, addToQueue } from "../handlers/queue";
 import { getTicketByChannel } from "../handlers/ticket";
-import { GAMEMODES, Gamemode } from "../utils/constants";
+import { GAMEMODES, GAMEMODE_KEYS, Gamemode } from "../utils/constants";
 import { hasCommandBypass } from "../utils/permissions";
+
+const buttonRateLimit = new Map<string, number>();
+const BUTTON_COOLDOWN_MS = 3000;
+
+function isRateLimited(userId: string, action: string): boolean {
+  const key = `${userId}:${action}`;
+  const last = buttonRateLimit.get(key) ?? 0;
+  const now = Date.now();
+  if (now - last < BUTTON_COOLDOWN_MS) return true;
+  buttonRateLimit.set(key, now);
+  if (buttonRateLimit.size > 5000) {
+    const oldest = [...buttonRateLimit.entries()].sort((a, b) => a[1] - b[1]).slice(0, 1000);
+    for (const [k] of oldest) buttonRateLimit.delete(k);
+  }
+  return false;
+}
 
 export function registerInteractionEvent(client: Client): void {
   client.on(Events.InteractionCreate, async (interaction: Interaction) => {
+    if (!interaction.guildId) return;
+
     if (interaction.isChatInputCommand()) {
       const command = commands.get(interaction.commandName);
       if (!command) return;
@@ -46,12 +65,34 @@ export function registerInteractionEvent(client: Client): void {
     }
 
     if (interaction.isButton()) {
-      await handleButtonInteraction(interaction as ButtonInteraction, client);
+      try {
+        await handleButtonInteraction(interaction as ButtonInteraction, client);
+      } catch (err) {
+        console.error(`Error handling button ${(interaction as ButtonInteraction).customId}:`, err);
+        const btn = interaction as ButtonInteraction;
+        const msg = { content: "❌ Something went wrong. Please try again.", ephemeral: true };
+        if (btn.replied || btn.deferred) {
+          await btn.followUp(msg).catch(() => null);
+        } else {
+          await btn.reply(msg).catch(() => null);
+        }
+      }
       return;
     }
 
     if (interaction.isModalSubmit()) {
-      await handleModalSubmit(interaction as ModalSubmitInteraction, client);
+      try {
+        await handleModalSubmit(interaction as ModalSubmitInteraction, client);
+      } catch (err) {
+        console.error(`Error handling modal ${(interaction as ModalSubmitInteraction).customId}:`, err);
+        const modal = interaction as ModalSubmitInteraction;
+        const msg = { content: "❌ Something went wrong. Please try again.", ephemeral: true };
+        if (modal.replied || modal.deferred) {
+          await modal.followUp(msg).catch(() => null);
+        } else {
+          await modal.reply(msg).catch(() => null);
+        }
+      }
       return;
     }
   });
@@ -64,6 +105,10 @@ async function handleButtonInteraction(
   const { customId } = interaction;
 
   if (customId === "register_profile") {
+    if (isRateLimited(interaction.user.id, "register_profile")) {
+      await interaction.reply({ content: "❌ Please wait a moment before doing that again.", ephemeral: true });
+      return;
+    }
     const modal = new ModalBuilder()
       .setCustomId("register_modal")
       .setTitle("Register Your Profile");
@@ -100,7 +145,16 @@ async function handleButtonInteraction(
   }
 
   if (customId.startsWith("join_gamemode_")) {
-    const gamemode = customId.replace("join_gamemode_", "") as Gamemode;
+    if (isRateLimited(interaction.user.id, "join_gamemode")) {
+      await interaction.reply({ content: "❌ Please wait a moment before doing that again.", ephemeral: true });
+      return;
+    }
+    const rawGamemode = customId.replace("join_gamemode_", "");
+    if (!GAMEMODE_KEYS.includes(rawGamemode as Gamemode)) {
+      await interaction.reply({ content: "❌ Invalid gamemode.", ephemeral: true });
+      return;
+    }
+    const gamemode = rawGamemode as Gamemode;
     const member = interaction.member as GuildMember;
 
     const playerData = await db
@@ -158,6 +212,10 @@ async function handleButtonInteraction(
   }
 
   if (customId === "join_queue") {
+    if (isRateLimited(interaction.user.id, "join_queue")) {
+      await interaction.reply({ content: "❌ Please wait a moment before doing that again.", ephemeral: true });
+      return;
+    }
     const member = interaction.member as GuildMember;
 
     const playerData = await db
@@ -201,6 +259,29 @@ async function handleButtonInteraction(
     const gamemode = gamemodeEntry[0] as Gamemode;
 
     const queue = await getOrCreateQueue(gamemode, region);
+
+    const isBypass = await hasCommandBypass(member.id, interaction.guildId!);
+
+    if (!isBypass) {
+      const isTester = await db
+        .select()
+        .from(queueTesters)
+        .where(
+          and(
+            eq(queueTesters.queueId, queue.id),
+            eq(queueTesters.discordId, member.id)
+          )
+        )
+        .limit(1);
+
+      if (isTester.length > 0) {
+        await interaction.reply({
+          content: "❌ You cannot join a queue you are currently hosting as a tester.",
+          ephemeral: true,
+        });
+        return;
+      }
+    }
 
     const alreadyIn = await db
       .select()
@@ -342,6 +423,20 @@ async function handleModalSubmit(
 ): Promise<void> {
   if (interaction.customId === "register_modal") {
     const ign = interaction.fields.getTextInputValue("ign").trim();
+
+    if (!/^[a-zA-Z0-9_]{3,16}$/.test(ign)) {
+      await interaction.reply({
+        content: "❌ Invalid IGN. Minecraft usernames must be **3–16 characters** and can only contain **letters, numbers, and underscores**.",
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const preferredServer = interaction.fields
+      .getTextInputValue("preferred_server")
+      .trim()
+      .slice(0, 100);
+
     const regionRaw = interaction.fields
       .getTextInputValue("region")
       .trim()
@@ -362,10 +457,6 @@ async function handleModalSubmit(
       });
       return;
     }
-
-    const preferredServer = interaction.fields
-      .getTextInputValue("preferred_server")
-      .trim();
 
     await db
       .insert(players)
