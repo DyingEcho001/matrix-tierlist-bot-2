@@ -5,6 +5,7 @@ import {
   GuildMember,
 } from "discord.js";
 import { requireStaff, getMemberStaffLevel } from "../utils/permissions";
+import { buildRoleActionEmbed } from "../utils/embeds";
 import { logCommand } from "../handlers/audit";
 
 export const roleCommand = {
@@ -66,17 +67,20 @@ export const roleCommand = {
       return;
     }
 
+    const embed = buildRoleActionEmbed({
+      action: sub as "add" | "remove",
+      roleId: role.id,
+      targetUserId: targetUser.id,
+      moderatorId: member.id,
+    });
+
     if (sub === "add") {
       await targetMember.roles.add(role.id, `Role added by ${member.user.tag}`);
-      await interaction.reply({
-        content: `✅ Added <@&${role.id}> to <@${targetUser.id}>.`,
-      });
     } else {
       await targetMember.roles.remove(role.id, `Role removed by ${member.user.tag}`);
-      await interaction.reply({
-        content: `✅ Removed <@&${role.id}> from <@${targetUser.id}>.`,
-      });
     }
+
+    await interaction.reply({ embeds: [embed], allowedMentions: { parse: [] } });
 
     await logCommand(client, {
       command: `role ${sub}`,

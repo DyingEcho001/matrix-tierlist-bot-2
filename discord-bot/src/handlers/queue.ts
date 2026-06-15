@@ -217,5 +217,5 @@ export async function startQueueUpdateLoop(client: Client): Promise<void> {
     } catch (err) {
       console.error("Queue update loop error:", err);
     }
-  }, 60_000);
+  }, 10_000);
 }

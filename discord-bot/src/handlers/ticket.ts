@@ -310,6 +310,88 @@ export async function sendResultToChannel(params: {
   }
 }
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function buildHtmlTranscript(
+  ticket: typeof tickets.$inferSelect,
+  messages: Array<{ author: string; avatarURL: string; content: string; timestamp: Date; isBot: boolean; embeds: string[] }>
+): string {
+  const gamemodeName = GAMEMODES[ticket.gamemode as Gamemode] ?? ticket.gamemode;
+  const messageRows = messages
+    .map((m) => {
+      const time = m.timestamp.toLocaleString("en-US", {
+        month: "short", day: "numeric", year: "numeric",
+        hour: "numeric", minute: "2-digit", hour12: true,
+      });
+      const embedsHtml = m.embeds.length > 0
+        ? `<div class="embeds">${m.embeds.map(e => `<div class="embed-block">${escapeHtml(e)}</div>`).join("")}</div>`
+        : "";
+      return `
+      <div class="message ${m.isBot ? "bot" : ""}">
+        <img class="avatar" src="${m.avatarURL}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" />
+        <div class="content">
+          <div class="meta">
+            <span class="author ${m.isBot ? "bot-tag" : ""}">${escapeHtml(m.author)}</span>
+            <span class="timestamp">${time}</span>
+          </div>
+          <div class="text">${escapeHtml(m.content)}</div>
+          ${embedsHtml}
+        </div>
+      </div>`;
+    })
+    .join("\n");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Transcript — Ticket #${ticket.id}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #313338; color: #dbdee1; font-family: 'gg sans', 'Noto Sans', Arial, sans-serif; font-size: 14px; }
+    .header { background: #2b2d31; padding: 16px 24px; border-bottom: 1px solid #1e1f22; display: flex; align-items: center; gap: 12px; }
+    .header h1 { font-size: 18px; color: #fff; }
+    .header .meta { font-size: 12px; color: #949ba4; margin-top: 4px; }
+    .badge { background: #5865f2; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+    .messages { padding: 16px 24px; }
+    .message { display: flex; gap: 12px; padding: 4px 0 8px; }
+    .message:hover { background: rgba(0,0,0,0.06); border-radius: 4px; }
+    .avatar { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; margin-top: 2px; }
+    .content { flex: 1; }
+    .meta { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
+    .author { font-weight: 600; color: #fff; }
+    .author.bot-tag { color: #5865f2; }
+    .timestamp { font-size: 11px; color: #949ba4; }
+    .text { color: #dbdee1; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+    .embeds { margin-top: 6px; }
+    .embed-block { background: #2b2d31; border-left: 4px solid #5865f2; border-radius: 4px; padding: 8px 12px; margin-top: 4px; font-size: 12px; color: #949ba4; font-style: italic; }
+    .message.bot .author { color: #5865f2; }
+    .divider { border: none; border-top: 1px solid #3f4147; margin: 12px 0; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>Ticket #${ticket.id} — ${escapeHtml(gamemodeName)}</h1>
+      <div class="meta">
+        Tester: <@${ticket.testerId}> &nbsp;|&nbsp; Testee: <@${ticket.testeeId}> &nbsp;|&nbsp; Region: ${escapeHtml(ticket.region)} &nbsp;|&nbsp; Status: ${escapeHtml(ticket.status ?? "closed")}
+        &nbsp;<span class="badge">Matrix Tierlist</span>
+      </div>
+    </div>
+  </div>
+  <div class="messages">
+    ${messageRows}
+  </div>
+</body>
+</html>`;
+}
+
 export async function sendTranscript(
   client: Client,
   ticket: typeof tickets.$inferSelect,
@@ -324,24 +406,30 @@ export async function sendTranscript(
       .catch(() => null)) as TextChannel | null;
     if (!transcriptChannel) return;
 
-    const messages = await channel.messages.fetch({ limit: 100 });
-    const sorted = [...messages.values()].reverse();
+    const fetched = await channel.messages.fetch({ limit: 100 });
+    const sorted = [...fetched.values()].reverse();
 
-    const lines = sorted.map(
-      (m) =>
-        `[${m.createdAt.toISOString()}] ${m.author.tag}: ${m.content}${
-          m.embeds.length > 0 ? " [embed]" : ""
-        }`
-    );
+    const messageData = sorted.map((m) => ({
+      author: m.member?.displayName ?? m.author.username,
+      avatarURL: m.author.displayAvatarURL({ size: 64 }),
+      content: m.content || (m.embeds.length > 0 ? "" : "(no content)"),
+      timestamp: m.createdAt,
+      isBot: m.author.bot,
+      embeds: m.embeds.map((e) =>
+        [e.title, e.description, ...(e.fields?.map((f) => `${f.name}: ${f.value}`) ?? [])]
+          .filter(Boolean)
+          .join(" | ")
+      ),
+    }));
 
-    const transcript = lines.join("\n");
-    const buffer = Buffer.from(transcript, "utf-8");
-    const fileName = `transcript-${ticket.id}-${ticket.gamemode}-${Date.now()}.txt`;
+    const html = buildHtmlTranscript(ticket, messageData);
+    const buffer = Buffer.from(html, "utf-8");
+    const fileName = `transcript-${ticket.id}-${ticket.gamemode}-${Date.now()}.html`;
+
+    const gamemodeName = GAMEMODES[ticket.gamemode as Gamemode] ?? ticket.gamemode;
 
     await transcriptChannel.send({
-      content: `📋 Transcript for ticket #${ticket.id} | ${
-        GAMEMODES[ticket.gamemode as Gamemode] ?? ticket.gamemode
-      } | Tester: <@${ticket.testerId}> | Testee: <@${ticket.testeeId}>`,
+      content: `📋 Transcript for ticket #${ticket.id} | ${gamemodeName} | Tester: <@${ticket.testerId}> | Testee: <@${ticket.testeeId}>`,
       files: [{ attachment: buffer, name: fileName }],
     });
   } catch (err) {

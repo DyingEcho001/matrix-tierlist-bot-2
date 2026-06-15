@@ -12,6 +12,8 @@ import {
   EMBED_COLORS,
   Gamemode,
   Tier,
+  GAMEMODE_EMOJIS,
+  GAMEMODE_BUTTON_EMOJIS,
 } from "./constants";
 
 export function buildRegistrationPanelEmbed(): EmbedBuilder {
@@ -39,27 +41,42 @@ export function buildRegistrationPanelEmbed(): EmbedBuilder {
     .setColor(EMBED_COLORS.primary);
 }
 
+function makeButtonEmoji(gm: Gamemode): { id: string; name: string } | { name: string } | undefined {
+  const e = GAMEMODE_BUTTON_EMOJIS[gm];
+  if (typeof e === "string") {
+    return { name: e };
+  }
+  if (e && typeof e === "object" && "id" in e && e.id) {
+    return { id: e.id, name: e.name };
+  }
+  return undefined;
+}
+
 export function buildRegistrationPanelRows(): ActionRowBuilder<ButtonBuilder>[] {
   const gamemodeKeys = Object.keys(GAMEMODES) as Gamemode[];
   const rows: ActionRowBuilder<ButtonBuilder>[] = [];
 
-  const registerRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder()
-      .setCustomId("register_profile")
-      .setLabel("📝 Register / Update Profile")
-      .setStyle(ButtonStyle.Primary)
-  );
+  const registerBtn = new ButtonBuilder()
+    .setCustomId("register_profile")
+    .setLabel("Register / Update Profile")
+    .setStyle(ButtonStyle.Danger)
+    .setEmoji({ id: "1475200135108628523", name: "BOOK_QUILL" });
+
+  const registerRow = new ActionRowBuilder<ButtonBuilder>().addComponents(registerBtn);
   rows.push(registerRow);
 
   for (let i = 0; i < gamemodeKeys.length; i += 5) {
     const chunk = gamemodeKeys.slice(i, i + 5);
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-      ...chunk.map((gm) =>
-        new ButtonBuilder()
+      ...chunk.map((gm) => {
+        const btn = new ButtonBuilder()
           .setCustomId(`join_gamemode_${gm}`)
           .setLabel(GAMEMODES[gm])
-          .setStyle(ButtonStyle.Secondary)
-      )
+          .setStyle(ButtonStyle.Secondary);
+        const emoji = makeButtonEmoji(gm);
+        if (emoji) btn.setEmoji(emoji);
+        return btn;
+      })
     );
     rows.push(row);
   }
@@ -85,11 +102,14 @@ export function buildQueueOpenEmbed(params: {
       ? testers.map((t, i) => `${i + 1}. <@${t.discordId}>`).join("\n")
       : "*None*";
 
+  const gamemodeName = GAMEMODES[gamemode];
+  const gamemodeEmoji = GAMEMODE_EMOJIS[gamemode] ?? "";
+
   return new EmbedBuilder()
-    .setTitle("Tester(s) Available!")
+    .setTitle(`${gamemodeEmoji} ${gamemodeName} Queue — Tester(s) Available!`)
     .setDescription(
       [
-        "The queue updates every 1 minute.",
+        "The queue updates every 10 seconds.",
         "Use `/leave` if you wish to be removed from the waitlist or queue.",
         "",
         "**Queue:**",
@@ -101,7 +121,7 @@ export function buildQueueOpenEmbed(params: {
     )
     .setColor(EMBED_COLORS.primary)
     .setFooter({
-      text: `${GAMEMODES[gamemode]} | ${region} | Matrix tierlist Dev - DyingEcho`,
+      text: `${gamemodeName} | ${region} | Matrix tierlist Dev - DyingEcho`,
     })
     .setTimestamp();
 }
@@ -121,23 +141,27 @@ export function buildQueueClosedEmbed(params: {
   lastSession?: Date | null;
 }): EmbedBuilder {
   const { gamemode, region, lastSession } = params;
+  const gamemodeName = GAMEMODES[gamemode];
+  const gamemodeEmoji = GAMEMODE_EMOJIS[gamemode] ?? "";
+
   const lastSessionText = lastSession
     ? `<t:${Math.floor(lastSession.getTime() / 1000)}:f>`
     : "Never";
 
   return new EmbedBuilder()
-    .setTitle("No Testers Online")
+    .setTitle(`${gamemodeEmoji} ${gamemodeName} Queue Is Now Closed`)
     .setDescription(
       [
-        `No testers for your region are available at this time.`,
-        `You will be pinged when a tester is available.`,
-        `Check back later!`,
+        `No ${gamemodeName} Tester Currently Online <:Tester:1512790870775300227>`,
         "",
-        `Last testing session: ${lastSessionText}`,
+        "This queue has been closed. You will be notified when a new queue is opened",
+        "",
+        "**Session Ended**",
+        lastSessionText,
       ].join("\n")
     )
     .setColor(EMBED_COLORS.error)
-    .setFooter({ text: `${GAMEMODES[gamemode]} | ${region} | Matrix tierlist Dev - DyingEcho` })
+    .setFooter({ text: `${gamemodeName} | ${region} | Matrix tierlist Dev - DyingEcho` })
     .setTimestamp();
 }
 
@@ -378,5 +402,81 @@ export function buildAuditLogEmbed(params: {
     )
     .setDescription(optionText || null)
     .setColor(EMBED_COLORS.info)
+    .setTimestamp();
+}
+
+export function buildRoleActionEmbed(params: {
+  action: "add" | "remove";
+  roleId: string;
+  targetUserId: string;
+  moderatorId: string;
+}): EmbedBuilder {
+  const { action, roleId, targetUserId, moderatorId } = params;
+  const isAdd = action === "add";
+
+  return new EmbedBuilder()
+    .setTitle(isAdd ? "✅ Role Added" : "✅ Role Removed")
+    .setDescription(
+      isAdd
+        ? `<@${moderatorId}> has given the <@&${roleId}> role to <@${targetUserId}>.`
+        : `<@${moderatorId}> has removed the <@&${roleId}> role from <@${targetUserId}>.`
+    )
+    .setColor(isAdd ? EMBED_COLORS.success : EMBED_COLORS.error)
+    .setTimestamp();
+}
+
+export function buildTempRoleEmbed(params: {
+  action: "add" | "remove";
+  roleId: string;
+  targetUserId: string;
+  moderatorId: string;
+  expiresAt?: Date;
+}): EmbedBuilder {
+  const { action, roleId, targetUserId, moderatorId, expiresAt } = params;
+  const isAdd = action === "add";
+
+  const embed = new EmbedBuilder()
+    .setTitle(isAdd ? "✅ Temporary Role Added" : "✅ Temporary Role Removed")
+    .setDescription(
+      isAdd
+        ? `<@${moderatorId}> has given the <@&${roleId}> role to <@${targetUserId}>.`
+        : `<@${moderatorId}> has removed the <@&${roleId}> role from <@${targetUserId}>.`
+    )
+    .setColor(isAdd ? EMBED_COLORS.success : EMBED_COLORS.error)
+    .addFields(
+      { name: "User", value: `<@${targetUserId}> (${targetUserId})`, inline: false },
+      { name: "Moderator", value: `<@${moderatorId}> (${moderatorId})`, inline: false }
+    );
+
+  if (isAdd && expiresAt) {
+    embed.addFields({
+      name: "Expires",
+      value: `<t:${Math.floor(expiresAt.getTime() / 1000)}:R> (on <t:${Math.floor(expiresAt.getTime() / 1000)}:f>)`,
+      inline: false,
+    });
+  }
+
+  embed.setTimestamp();
+  return embed;
+}
+
+export function buildRedeemEmbed(params: {
+  testerId: string;
+  reward: string;
+  testsCost: number;
+  testsRemaining: number;
+}): EmbedBuilder {
+  const { testerId, reward, testsCost, testsRemaining } = params;
+
+  return new EmbedBuilder()
+    .setTitle("Reward Redeemed")
+    .setColor(EMBED_COLORS.primary)
+    .addFields(
+      { name: "Tester", value: `<@${testerId}>`, inline: false },
+      { name: "Reward Redeemed", value: reward, inline: false },
+      { name: "Tests Spent", value: `${testsCost}`, inline: false },
+      { name: "Tests Remaining", value: `${testsRemaining}`, inline: false },
+    )
+    .setFooter({ text: "Ping a Regulator or above to get your reward | Matrix tierlist Dev - DyingEcho" })
     .setTimestamp();
 }

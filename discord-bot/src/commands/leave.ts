@@ -5,7 +5,7 @@ import {
   GuildMember,
 } from "discord.js";
 import { db } from "../database";
-import { queues, queueMembers, queueTesters } from "../database/schema";
+import { queues, queueMembers, queueTesters, channelConfig } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import { getOrCreateQueue, removeFromQueue } from "../handlers/queue";
 import { GAMEMODE_KEYS, GAMEMODES } from "../utils/constants";
@@ -31,11 +31,8 @@ export const leaveCommand = {
         .setDescription("The region queue to leave")
         .setRequired(true)
         .addChoices(
-          { name: "NA", value: "NA" },
-          { name: "EU", value: "EU" },
-          { name: "AS", value: "AS" },
-          { name: "SA", value: "SA" },
-          { name: "AU", value: "AU" }
+          { name: "EU/NA", value: "EU/NA" },
+          { name: "AS/AU", value: "AS/AU" },
         )
     ),
 
@@ -44,7 +41,26 @@ export const leaveCommand = {
     const gamemode = interaction.options.getString("gamemode", true);
     const region = interaction.options.getString("region", true);
 
-    await interaction.deferReply({ ephemeral: true });
+    const commandsChannelRow = await db
+      .select()
+      .from(channelConfig)
+      .where(
+        and(
+          eq(channelConfig.guildId, interaction.guildId!),
+          eq(channelConfig.configKey, "commands")
+        )
+      )
+      .limit(1);
+
+    if (commandsChannelRow[0] && interaction.channelId !== commandsChannelRow[0].channelId) {
+      await interaction.reply({
+        content: `❌ This command can only be used in <#${commandsChannelRow[0].channelId}>.`,
+        ephemeral: true,
+      });
+      return;
+    }
+
+    await interaction.deferReply({ ephemeral: false });
 
     const queue = await getOrCreateQueue(gamemode, region);
 
@@ -109,7 +125,7 @@ export const leaveCommand = {
     }
 
     await interaction.editReply({
-      content: `✅ You have left the **${GAMEMODES[gamemode as keyof typeof GAMEMODES]}** (${region}) queue.`,
+      content: `✅ <@${member.id}> has left the **${GAMEMODES[gamemode as keyof typeof GAMEMODES]}** (${region}) queue.`,
     });
 
     await logCommand(client, {

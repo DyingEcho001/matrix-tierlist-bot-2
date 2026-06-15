@@ -22,7 +22,9 @@ export const setChannelCommand = {
         .addChoices(
           { name: "Transcript", value: "transcript" },
           { name: "Audit Log", value: "audit_log" },
-          { name: "Results", value: "results" }
+          { name: "Results", value: "results" },
+          { name: "Commands", value: "commands" },
+          { name: "Redeem", value: "redeem" },
         )
     )
     .addChannelOption((o) =>
@@ -55,6 +57,8 @@ export const setChannelCommand = {
       transcript: "Transcript",
       audit_log: "Audit Log",
       results: "Results",
+      commands: "Commands",
+      redeem: "Redeem",
     };
 
     await interaction.reply({

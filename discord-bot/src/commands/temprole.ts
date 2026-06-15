@@ -8,6 +8,7 @@ import { db } from "../database";
 import { tempRoles } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import { requireStaff, getMemberStaffLevel, parseDuration } from "../utils/permissions";
+import { buildTempRoleEmbed } from "../utils/embeds";
 import { logCommand } from "../handlers/audit";
 
 export const temproleCommand = {
@@ -31,6 +32,12 @@ export const temproleCommand = {
             .setDescription("Duration (e.g. 30d, 1h, 24h)")
             .setRequired(true)
         )
+        .addBooleanOption((o) =>
+          o
+            .setName("ephemeral")
+            .setDescription("Send the confirmation as ephemeral (only you can see it)?")
+            .setRequired(false)
+        )
     )
     .addSubcommand((sub) =>
       sub
@@ -42,6 +49,12 @@ export const temproleCommand = {
         .addRoleOption((o) =>
           o.setName("role").setDescription("Role to remove").setRequired(true)
         )
+        .addBooleanOption((o) =>
+          o
+            .setName("ephemeral")
+            .setDescription("Send the confirmation as ephemeral (only you can see it)?")
+            .setRequired(false)
+        )
     ),
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
@@ -51,6 +64,7 @@ export const temproleCommand = {
     const sub = interaction.options.getSubcommand();
     const targetUser = interaction.options.getUser("user", true);
     const role = interaction.options.getRole("role", true);
+    const isEphemeral = interaction.options.getBoolean("ephemeral") ?? false;
 
     const targetMember = await interaction.guild!.members
       .fetch(targetUser.id)
@@ -101,8 +115,18 @@ export const temproleCommand = {
           assignedBy: member.id,
         });
 
+      const embed = buildTempRoleEmbed({
+        action: "add",
+        roleId: role.id,
+        targetUserId: targetUser.id,
+        moderatorId: member.id,
+        expiresAt,
+      });
+
       await interaction.reply({
-        content: `✅ Added <@&${role.id}> to <@${targetUser.id}> until <t:${Math.floor(expiresAt.getTime() / 1000)}:f>.`,
+        embeds: [embed],
+        ephemeral: isEphemeral,
+        allowedMentions: { parse: [] },
       });
     } else {
       await targetMember.roles.remove(role.id, `Temp role removed by ${member.user.tag}`);
@@ -117,8 +141,17 @@ export const temproleCommand = {
           )
         );
 
+      const embed = buildTempRoleEmbed({
+        action: "remove",
+        roleId: role.id,
+        targetUserId: targetUser.id,
+        moderatorId: member.id,
+      });
+
       await interaction.reply({
-        content: `✅ Removed <@&${role.id}> from <@${targetUser.id}>.`,
+        embeds: [embed],
+        ephemeral: isEphemeral,
+        allowedMentions: { parse: [] },
       });
     }
 
