@@ -5,7 +5,7 @@ import {
   GuildMember,
 } from "discord.js";
 import { db } from "../database";
-import { testerStats, channelConfig } from "../database/schema";
+import { testerStats, channelConfig, players } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import { REDEEM_REWARDS } from "../utils/constants";
 import { buildRedeemEmbed } from "../utils/embeds";
@@ -96,11 +96,19 @@ export const redeemCommand = {
         .values({ discordId: member.id, allTimeTests: 0, monthlyTests: 0 });
     }
 
+    const playerRow = await db
+      .select()
+      .from(players)
+      .where(eq(players.discordId, member.id))
+      .limit(1);
+    const ign = playerRow[0]?.ign ?? null;
+
     const embed = buildRedeemEmbed({
       testerId: member.id,
       reward: reward.label,
       testsCost: reward.cost,
       testsRemaining: newTotal,
+      ign,
     });
 
     await interaction.reply({ embeds: [embed], ephemeral: false });
