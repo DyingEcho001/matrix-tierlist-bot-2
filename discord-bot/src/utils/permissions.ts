@@ -5,7 +5,7 @@ import {
   ChatInputCommandInteraction,
 } from "discord.js";
 import { db } from "../database";
-import { staffRoles } from "../database/schema";
+import { staffRoles, commandBypasses } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import { StaffRole, STAFF_ROLE_HIERARCHY, STAFF_ROLES } from "./constants";
 
@@ -55,12 +55,27 @@ export function isAdmin(member: GuildMember): boolean {
   return member.permissions.has(PermissionFlagsBits.Administrator);
 }
 
+export async function hasCommandBypass(
+  discordId: string,
+  guildId: string
+): Promise<boolean> {
+  const row = await db
+    .select()
+    .from(commandBypasses)
+    .where(
+      and(eq(commandBypasses.guildId, guildId), eq(commandBypasses.discordId, discordId))
+    )
+    .limit(1);
+  return row.length > 0;
+}
+
 export async function requireStaff(
   interaction: ChatInputCommandInteraction,
   required: StaffRole
 ): Promise<boolean> {
   const member = interaction.member as GuildMember;
   if (isAdmin(member) || isOwner(member)) return true;
+  if (await hasCommandBypass(member.id, interaction.guildId!)) return true;
   const ok = await hasStaffRole(member, interaction.guildId!, required);
   if (!ok) {
     await interaction.reply({
