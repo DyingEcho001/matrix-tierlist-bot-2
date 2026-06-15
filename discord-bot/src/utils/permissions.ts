@@ -120,6 +120,8 @@ export async function isVoluntaryTester(
   guildId: string,
   gamemode?: string
 ): Promise<boolean> {
+  if (isAdmin(member) || isOwner(member)) return true;
+  if (await hasCommandBypass(member.id, guildId)) return true;
   const vtRoleId = await getVoluntaryTesterRoleId(guildId);
   if (!vtRoleId || !member.roles.cache.has(vtRoleId)) return false;
   if (gamemode) {
