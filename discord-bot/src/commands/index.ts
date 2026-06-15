@@ -45,6 +45,7 @@ import { statsCommand } from "./stats";
 import { queuePriorityRoleCommand } from "./queue-priority-role";
 import { tierWipeCommand } from "./tier-wipe";
 import { redeemCommand } from "./redeem";
+import { bypassCommand } from "./bypass";
 
 const allCommands: Command[] = [
   startCommand,
@@ -84,6 +85,7 @@ const allCommands: Command[] = [
   queuePriorityRoleCommand,
   tierWipeCommand,
   redeemCommand,
+  bypassCommand,
 ];
 
 for (const cmd of allCommands) {
