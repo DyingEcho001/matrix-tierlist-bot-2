@@ -24,6 +24,7 @@ import { eq, and } from "drizzle-orm";
 import { getOrCreateQueue, addToQueue } from "../handlers/queue";
 import { getTicketByChannel } from "../handlers/ticket";
 import { GAMEMODES, Gamemode } from "../utils/constants";
+import { hasCommandBypass } from "../utils/permissions";
 
 export function registerInteractionEvent(client: Client): void {
   client.on(Events.InteractionCreate, async (interaction: Interaction) => {
@@ -268,9 +269,10 @@ async function handleEvalHT3(
   const member = interaction.member as GuildMember;
 
   const ticket = await getTicketByChannel(interaction.channelId);
-  if (!ticket || ticket.testerId !== member.id) {
+  const isBypass = await hasCommandBypass(member.id, interaction.guildId!);
+  if (!ticket || (ticket.testeeId !== member.id && !isBypass)) {
     await interaction.reply({
-      content: "❌ Only the tester can use this button.",
+      content: "❌ Only the testee can use this button.",
       ephemeral: true,
     });
     return;
@@ -316,9 +318,10 @@ async function handleEvalLT3(
   const member = interaction.member as GuildMember;
 
   const ticket = await getTicketByChannel(interaction.channelId);
-  if (!ticket || ticket.testerId !== member.id) {
+  const isBypass = await hasCommandBypass(member.id, interaction.guildId!);
+  if (!ticket || (ticket.testeeId !== member.id && !isBypass)) {
     await interaction.reply({
-      content: "❌ Only the tester can use this button.",
+      content: "❌ Only the testee can use this button.",
       ephemeral: true,
     });
     return;
