@@ -303,3 +303,18 @@ export const shameRoles = pgTable(
     unique("shame_roles_guild_category_unique").on(t.guildId, t.category),
   ]
 );
+
+export const commandBypasses = pgTable(
+  "command_bypasses",
+  {
+    id: serial("id").primaryKey(),
+    guildId: text("guild_id").notNull(),
+    discordId: text("discord_id").notNull(),
+    addedBy: text("added_by").notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (t) => [
+    unique("command_bypasses_guild_user_unique").on(t.guildId, t.discordId),
+    index("command_bypasses_discord_id_idx").on(t.discordId),
+  ]
+);
