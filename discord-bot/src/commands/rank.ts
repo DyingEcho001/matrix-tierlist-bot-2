@@ -17,7 +17,7 @@ import {
   HT3_PLUS_TIERS,
 } from "../utils/constants";
 import { requireStaff } from "../utils/permissions";
-import { sendResultToChannel, incrementTesterStats } from "../handlers/ticket";
+import { sendResultToChannel, incrementTesterStats, applyTierRole } from "../handlers/ticket";
 import { logCommand } from "../handlers/audit";
 
 export const rankCommand = {
@@ -96,6 +96,14 @@ export const rankCommand = {
       .from(players)
       .where(eq(players.discordId, targetUser.id))
       .limit(1);
+
+    await applyTierRole({
+      client,
+      guildId: interaction.guildId!,
+      discordId: targetUser.id,
+      gamemode,
+      tier,
+    });
 
     await sendResultToChannel({
       client,
