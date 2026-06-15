@@ -15,10 +15,61 @@ import {
   players,
   cooldowns,
   tiers,
+  tierRoles,
 } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import { buildTicketInfoEmbed, buildTestResultEmbed } from "../utils/embeds";
 import { GAMEMODES, Gamemode, Tier, COOLDOWNS, HT3_PLUS_TIERS } from "../utils/constants";
+
+export async function applyTierRole(params: {
+  client: Client;
+  guildId: string;
+  discordId: string;
+  gamemode: string;
+  tier: Tier;
+}): Promise<void> {
+  const { client, guildId, discordId, gamemode, tier } = params;
+  try {
+    const newRoleRow = await db
+      .select()
+      .from(tierRoles)
+      .where(
+        and(
+          eq(tierRoles.guildId, guildId),
+          eq(tierRoles.gamemode, gamemode),
+          eq(tierRoles.tier, tier)
+        )
+      )
+      .limit(1);
+
+    if (!newRoleRow[0]) return;
+
+    const newRoleId = newRoleRow[0].roleId;
+
+    const allGamemodeRoles = await db
+      .select()
+      .from(tierRoles)
+      .where(and(eq(tierRoles.guildId, guildId), eq(tierRoles.gamemode, gamemode)));
+
+    const guild = await client.guilds.fetch(guildId).catch(() => null);
+    if (!guild) return;
+
+    const member = await guild.members.fetch(discordId).catch(() => null);
+    if (!member) return;
+
+    for (const row of allGamemodeRoles) {
+      if (row.roleId !== newRoleId && member.roles.cache.has(row.roleId)) {
+        await member.roles.remove(row.roleId).catch(() => null);
+      }
+    }
+
+    if (!member.roles.cache.has(newRoleId)) {
+      await member.roles.add(newRoleId).catch(() => null);
+    }
+  } catch (err) {
+    console.error("Failed to apply tier role:", err);
+  }
+}
 
 export async function getCategoryId(
   guildId: string,
@@ -181,6 +232,14 @@ export async function closeTicket(params: {
       target: [tiers.discordId, tiers.gamemode],
       set: { tier, givenBy: closedBy, updatedAt: new Date() },
     });
+
+  await applyTierRole({
+    client,
+    guildId: ticket.guildId,
+    discordId: ticket.testeeId,
+    gamemode: ticket.gamemode,
+    tier,
+  });
 
   if (!skipCooldown) {
     const expiresAt = new Date(Date.now() + cooldownMs);
