@@ -94,7 +94,7 @@ export const pullCommand = {
       )
       .limit(1);
 
-    if (existingTicket.length > 0) {
+    if (existingTicket.length > 0 && existingTicket[0].type !== "ht3") {
       const channel = (await client.channels
         .fetch(existingTicket[0].channelId)
         .catch(() => null)) as TextChannel | null;
