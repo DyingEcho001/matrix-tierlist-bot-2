@@ -20,6 +20,7 @@ import {
   tickets,
   gamemodeRoles,
   categoryConfig,
+  staffRoles as staffRolesTable,
 } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import { getOrCreateQueue, addToQueue } from "../handlers/queue";
@@ -379,6 +380,25 @@ async function handleEvalHT3(
   if (ht3CategoryRow[0]) {
     await channel.setParent(ht3CategoryRow[0].categoryId, {
       lockPermissions: false,
+    });
+  }
+
+  const helperRoleRow = await db
+    .select()
+    .from(staffRolesTable)
+    .where(
+      and(
+        eq(staffRolesTable.guildId, interaction.guildId!),
+        eq(staffRolesTable.staffRole, "helper")
+      )
+    )
+    .limit(1);
+
+  if (helperRoleRow[0]) {
+    await channel.permissionOverwrites.edit(helperRoleRow[0].roleId, {
+      ViewChannel: true,
+      SendMessages: true,
+      ReadMessageHistory: true,
     });
   }
 
