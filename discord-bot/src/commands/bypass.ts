@@ -47,7 +47,10 @@ export const bypassCommand = {
       return;
     }
 
-    if (await hasCommandBypass(member.id, interaction.guildId!)) {
+    if (
+      (await hasCommandBypass(member.id, interaction.guildId!)) &&
+      !member.permissions.has(PermissionFlagsBits.Administrator)
+    ) {
       await interaction.reply({
         content: "❌ Bypass users cannot manage the bypass list.",
         ephemeral: true,
