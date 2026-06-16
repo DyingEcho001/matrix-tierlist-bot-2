@@ -21,6 +21,7 @@ import { playerDataCommand } from "./player-data";
 import { restrictCommand } from "./restrict";
 import { unrestrictCommand } from "./unrestrict";
 import { addCommand } from "./add";
+import { removeCommand } from "./remove";
 import { migrateProfileCommand } from "./migrate-profile";
 import { temproleCommand } from "./temprole";
 import { roleCommand } from "./role";
@@ -62,6 +63,7 @@ const allCommands: Command[] = [
   restrictCommand,
   unrestrictCommand,
   addCommand,
+  removeCommand,
   migrateProfileCommand,
   temproleCommand,
   roleCommand,
