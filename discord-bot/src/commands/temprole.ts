@@ -5,7 +5,7 @@ import {
   GuildMember,
 } from "discord.js";
 import { db } from "../database";
-import { tempRoles } from "../database/schema";
+import { tempRoles, staffRoles, testerRoles } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import { requireStaff, getMemberStaffLevel, parseDuration } from "../utils/permissions";
 import { buildTempRoleEmbed } from "../utils/embeds";
@@ -78,8 +78,33 @@ export const temproleCommand = {
       return;
     }
 
-    const myLevel = await getMemberStaffLevel(member, interaction.guildId!);
-    const theirLevel = await getMemberStaffLevel(targetMember, interaction.guildId!);
+    const guildId = interaction.guildId!;
+
+    const allStaffRoles = await db
+      .select({ roleId: staffRoles.roleId })
+      .from(staffRoles)
+      .where(eq(staffRoles.guildId, guildId));
+
+    const allTesterRoles = await db
+      .select({ roleId: testerRoles.roleId })
+      .from(testerRoles)
+      .where(eq(testerRoles.guildId, guildId));
+
+    const protectedRoleIds = new Set([
+      ...allStaffRoles.map((r) => r.roleId),
+      ...allTesterRoles.map((r) => r.roleId),
+    ]);
+
+    if (protectedRoleIds.has(role.id)) {
+      await interaction.reply({
+        content: "❌ You cannot use `/temprole` to give or remove staff roles or tester roles.",
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const myLevel = await getMemberStaffLevel(member, guildId);
+    const theirLevel = await getMemberStaffLevel(targetMember, guildId);
 
     if (theirLevel >= myLevel && !member.permissions.has(8n)) {
       await interaction.reply({
@@ -137,7 +162,7 @@ export const temproleCommand = {
           and(
             eq(tempRoles.discordId, targetUser.id),
             eq(tempRoles.roleId, role.id),
-            eq(tempRoles.guildId, interaction.guildId!)
+            eq(tempRoles.guildId, guildId)
           )
         );
 
