@@ -383,23 +383,17 @@ async function handleEvalHT3(
     });
   }
 
-  const helperRoleRow = await db
+  const allStaffRoleRows = await db
     .select()
     .from(staffRolesTable)
-    .where(
-      and(
-        eq(staffRolesTable.guildId, interaction.guildId!),
-        eq(staffRolesTable.staffRole, "helper")
-      )
-    )
-    .limit(1);
+    .where(eq(staffRolesTable.guildId, interaction.guildId!));
 
-  if (helperRoleRow[0]) {
-    await channel.permissionOverwrites.edit(helperRoleRow[0].roleId, {
+  for (const row of allStaffRoleRows) {
+    await channel.permissionOverwrites.edit(row.roleId, {
       ViewChannel: true,
       SendMessages: true,
       ReadMessageHistory: true,
-    });
+    }).catch(() => null);
   }
 
   await db
