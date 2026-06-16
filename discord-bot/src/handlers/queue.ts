@@ -4,6 +4,7 @@ import {
   queues,
   queueMembers,
   queueTesters,
+  tickets,
   players,
   channelConfig,
   queuePriorityRoles,
@@ -145,6 +146,17 @@ export async function updateQueueEmbed(
     const members = await getQueueMembers(queue.id);
     const testers = await getQueueTesters(queue.id);
 
+    const activeTests = await db
+      .select({ testeeId: tickets.testeeId, testerId: tickets.testerId })
+      .from(tickets)
+      .where(
+        and(
+          eq(tickets.gamemode, queue.gamemode),
+          eq(tickets.region, queue.region),
+          eq(tickets.status, "open")
+        )
+      );
+
     if (!queue.isActive) {
       const closedEmbed = buildQueueClosedEmbed({
         gamemode: queue.gamemode as Gamemode,
@@ -172,6 +184,7 @@ export async function updateQueueEmbed(
       region: queue.region,
       members: members.map((m) => ({ discordId: m.discordId })),
       testers: testers.map((t) => ({ discordId: t.discordId })),
+      activeTests,
     });
     const row = buildQueueOpenRow();
 
