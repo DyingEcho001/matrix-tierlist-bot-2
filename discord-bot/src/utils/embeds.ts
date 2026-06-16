@@ -125,9 +125,9 @@ export function buildQueueOpenEmbed(params: {
         "",
         "**Active Testers:**",
         testerList,
-        "",
-        "**Active Tests:**",
-        activeTestList,
+        ...(activeTests.length > 0
+          ? ["", "**Active Tests:**", activeTestList]
+          : []),
       ].join("\n")
     )
     .setColor(EMBED_COLORS.primary)
@@ -359,16 +359,14 @@ export function buildEvalEmbed(): {
   row: ActionRowBuilder<ButtonBuilder>;
 } {
   const embed = new EmbedBuilder()
-    .setTitle("⚖️ LT3+ Evaluation")
+    .setTitle("⚖️ HT3 Evaluation")
     .setDescription(
       [
-        "The testee has performed well enough to qualify for HT3 evaluation.",
+        "**Test for HT3** — The ticket will be transferred to an new category and a HT3 tester will be assigned to you",
+        "─────────────────────────────────────────",
+        "**Stay as LT3** — The you will be ranked as LT3 and the ticket will close normally.",
         "",
-        "**Test for HT3** — The ticket will be transferred to the HT3 testing area. A qualified HT3 player will test the testee. You will be removed from this ticket and can pull another testee.",
-        "",
-        "**Stay as LT3** — The testee will be ranked as LT3 and the ticket will close normally.",
-        "",
-        "*Choose wisely — this decision affects the testee's tier.*",
+        "*Choose wisely*",
       ].join("\n")
     )
     .setColor(EMBED_COLORS.warning);
