@@ -89,8 +89,9 @@ export function buildQueueOpenEmbed(params: {
   region: string;
   members: Array<{ discordId: string; username?: string }>;
   testers: Array<{ discordId: string; username?: string }>;
+  activeTests: Array<{ testeeId: string; testerId: string }>;
 }): EmbedBuilder {
-  const { gamemode, region, members, testers } = params;
+  const { gamemode, region, members, testers, activeTests } = params;
 
   const memberList =
     members.length > 0
@@ -100,6 +101,13 @@ export function buildQueueOpenEmbed(params: {
   const testerList =
     testers.length > 0
       ? testers.map((t, i) => `${i + 1}. <@${t.discordId}>`).join("\n")
+      : "*None*";
+
+  const activeTestList =
+    activeTests.length > 0
+      ? activeTests
+          .map((t) => `<@${t.testeeId}> is being tested by <@${t.testerId}>`)
+          .join("\n")
       : "*None*";
 
   const gamemodeName = GAMEMODES[gamemode];
@@ -117,6 +125,9 @@ export function buildQueueOpenEmbed(params: {
         "",
         "**Active Testers:**",
         testerList,
+        "",
+        "**Active Tests:**",
+        activeTestList,
       ].join("\n")
     )
     .setColor(EMBED_COLORS.primary)
