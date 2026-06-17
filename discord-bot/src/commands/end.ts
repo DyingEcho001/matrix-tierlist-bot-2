@@ -8,7 +8,7 @@ import { db } from "../database";
 import { queues, queueTesters, queueMembers } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import { GAMEMODE_KEYS, GAMEMODES, Gamemode } from "../utils/constants";
-import { isVoluntaryTester } from "../utils/permissions";
+import { isVoluntaryTester, hasStaffRole } from "../utils/permissions";
 import { getOrCreateQueue, updateQueueEmbed } from "../handlers/queue";
 import { logCommand } from "../handlers/audit";
 
@@ -54,6 +54,7 @@ export const endCommand = {
     await interaction.deferReply({ ephemeral: true });
 
     const queue = await getOrCreateQueue(gamemode, region);
+    const isRegulatorPlus = await hasStaffRole(member, interaction.guildId!, "regulator");
 
     const isTester = await db
       .select()
@@ -66,13 +67,52 @@ export const endCommand = {
       )
       .limit(1);
 
-    if (isTester.length === 0) {
+    if (isTester.length === 0 && !isRegulatorPlus) {
       await interaction.editReply({
         content: "❌ You are not an active tester in this queue.",
       });
       return;
     }
 
+    // Regulators+ who are not in the queue force-close the entire session
+    if (isTester.length === 0 && isRegulatorPlus) {
+      const activeTesters = await db
+        .select()
+        .from(queueTesters)
+        .where(eq(queueTesters.queueId, queue.id));
+
+      if (activeTesters.length === 0) {
+        await interaction.editReply({
+          content: `❌ There are no active testers in the **${GAMEMODES[gamemode as Gamemode]}** (${region}) queue to close.`,
+        });
+        return;
+      }
+
+      await db.delete(queueTesters).where(eq(queueTesters.queueId, queue.id));
+      await db.delete(queueMembers).where(eq(queueMembers.queueId, queue.id));
+      await db
+        .update(queues)
+        .set({ isActive: false, lastSessionEnd: new Date(), updatedAt: new Date() })
+        .where(eq(queues.id, queue.id));
+
+      const closedQueue = { ...queue, isActive: false, lastSessionEnd: new Date() };
+      await updateQueueEmbed(client, closedQueue as typeof queue);
+
+      await interaction.editReply({
+        content: `✅ Force-closed the **${GAMEMODES[gamemode as Gamemode]}** (${region}) queue and removed ${activeTesters.length} tester(s). All members cleared.`,
+      });
+
+      await logCommand(client, {
+        command: "end",
+        user: member,
+        guildId: interaction.guildId!,
+        channelId: interaction.channelId,
+        options: { gamemode, region, forceClose: "true", testersRemoved: String(activeTesters.length) },
+      });
+      return;
+    }
+
+    // Normal path — tester ending their own session
     await db
       .delete(queueTesters)
       .where(

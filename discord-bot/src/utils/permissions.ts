@@ -122,6 +122,8 @@ export async function isVoluntaryTester(
 ): Promise<boolean> {
   if (isAdmin(member) || isOwner(member)) return true;
   if (await hasCommandBypass(member.id, guildId)) return true;
+  // Regulators and above have full access to all tester commands
+  if (await hasStaffRole(member, guildId, "regulator")) return true;
   const vtRoleId = await getVoluntaryTesterRoleId(guildId);
   if (!vtRoleId || !member.roles.cache.has(vtRoleId)) return false;
   if (gamemode) {
