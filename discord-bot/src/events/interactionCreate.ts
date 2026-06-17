@@ -19,6 +19,7 @@ import {
   queueTesters,
   tickets,
   gamemodeRoles,
+  cooldowns,
   categoryConfig,
   staffRoles as staffRolesTable,
 } from "../database/schema";
@@ -196,19 +197,43 @@ async function handleButtonInteraction(
 
     const roleId = gamemodeRoleRow[0].roleId;
 
+    // If the user already has the role, allow them to remove it (leave waitlist)
     if (member.roles.cache.has(roleId)) {
       await member.roles.remove(roleId, "Left gamemode waitlist");
       await interaction.reply({
         content: `✅ You have been removed from the **${GAMEMODES[gamemode]}** (${playerRegion}) waitlist.`,
         ephemeral: true,
       });
-    } else {
-      await member.roles.add(roleId, "Joined gamemode waitlist");
+      return;
+    }
+
+    // Check for active cooldown before allowing them to re-join the waitlist
+    const now = new Date();
+    const activeCooldown = await db
+      .select()
+      .from(cooldowns)
+      .where(
+        and(
+          eq(cooldowns.discordId, member.id),
+          eq(cooldowns.gamemode, gamemode)
+        )
+      )
+      .limit(1);
+
+    if (activeCooldown[0] && activeCooldown[0].expiresAt > now) {
+      const expiryUnix = Math.floor(activeCooldown[0].expiresAt.getTime() / 1000);
       await interaction.reply({
-        content: `✅ You now have the **${GAMEMODES[gamemode]}** (${playerRegion}) waitlist role. You'll be pinged when a tester is available!`,
+        content: `⏳ You are on a cooldown for **${GAMEMODES[gamemode]}**.\nYou can rejoin the waitlist <t:${expiryUnix}:R> — on <t:${expiryUnix}:D>.`,
         ephemeral: true,
       });
+      return;
     }
+
+    await member.roles.add(roleId, "Joined gamemode waitlist");
+    await interaction.reply({
+      content: `✅ You now have the **${GAMEMODES[gamemode]}** (${playerRegion}) waitlist role. You'll be pinged when a tester is available!`,
+      ephemeral: true,
+    });
     return;
   }
 
@@ -304,7 +329,6 @@ async function handleButtonInteraction(
     }
 
     const now = new Date();
-    const { cooldowns } = await import("../database/schema");
     const activeCooldown = await db
       .select()
       .from(cooldowns)

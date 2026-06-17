@@ -16,6 +16,7 @@ import {
   cooldowns,
   tiers,
   tierRoles,
+  gamemodeRoles,
 } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import { buildTicketInfoEmbed, buildTestResultEmbed } from "../utils/embeds";
@@ -240,6 +241,41 @@ export async function closeTicket(params: {
     gamemode: ticket.gamemode,
     tier,
   });
+
+  // Remove the testee's waitlist role for this gamemode so they lose access to the waitlist channel
+  try {
+    const playerRow = await db
+      .select()
+      .from(players)
+      .where(eq(players.discordId, ticket.testeeId))
+      .limit(1);
+
+    if (playerRow[0]) {
+      const waitlistRoleRow = await db
+        .select()
+        .from(gamemodeRoles)
+        .where(
+          and(
+            eq(gamemodeRoles.guildId, ticket.guildId),
+            eq(gamemodeRoles.gamemode, ticket.gamemode),
+            eq(gamemodeRoles.region, playerRow[0].region)
+          )
+        )
+        .limit(1);
+
+      if (waitlistRoleRow[0]) {
+        const guild = await client.guilds.fetch(ticket.guildId).catch(() => null);
+        if (guild) {
+          const testeeMember = await guild.members.fetch(ticket.testeeId).catch(() => null);
+          if (testeeMember?.roles.cache.has(waitlistRoleRow[0].roleId)) {
+            await testeeMember.roles.remove(waitlistRoleRow[0].roleId, "Tier test completed — waitlist role removed").catch(() => null);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Failed to remove waitlist role after test:", err);
+  }
 
   if (!skipCooldown) {
     const expiresAt = new Date(Date.now() + cooldownMs);
