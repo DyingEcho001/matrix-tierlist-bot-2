@@ -2,6 +2,7 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   Client,
+  PermissionFlagsBits,
 } from "discord.js";
 import {
   buildRestrictionDmEmbed,
@@ -10,8 +11,6 @@ import {
   buildCooldownWarnDmEmbed,
 } from "../utils/embeds";
 import { GAMEMODE_KEYS, GAMEMODES, Gamemode } from "../utils/constants";
-
-const OWNER_ID = "1327527060234702871";
 
 const DM_TYPES = [
   { name: "Restriction Added", value: "restriction_add" },
@@ -25,7 +24,8 @@ type DmType = (typeof DM_TYPES)[number]["value"];
 export const testDmCommand = {
   data: new SlashCommandBuilder()
     .setName("test-dm")
-    .setDescription("Preview any DM the bot sends — owner only")
+    .setDescription("Preview any DM the bot sends — Administrator only")
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addStringOption((o) =>
       o
         .setName("type")
@@ -42,14 +42,6 @@ export const testDmCommand = {
     ),
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
-    if (interaction.user.id !== OWNER_ID) {
-      await interaction.reply({
-        content: "❌ You do not have permission to use this command.",
-        ephemeral: true,
-      });
-      return;
-    }
-
     const dmType = interaction.options.getString("type", true) as DmType;
     const gamemode = (interaction.options.getString("gamemode") ?? "smp") as Gamemode;
 
