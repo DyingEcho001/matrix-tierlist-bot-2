@@ -487,8 +487,8 @@ export function buildCooldownWarnDmEmbed(gamemode: Gamemode, expiresAt: Date): E
       [
         `Your ${gamemodeEmoji} **${gamemodeName}** cooldown runs out <t:${expiryUnix}:R>.`,
         "",
-        `You can wait it out, or skip it early with **2 test credits** via \`/redeem view\`.`,
-        `**Current balance:** Check with \`/redeem view\``,
+        `You can wait it out, or remove it early using your server invites via \`/rewards\`.`,
+        `**Check your balance:** \`/rewards-view\``,
       ].join("\n")
     )
     .setColor(PURPLE)
@@ -506,7 +506,7 @@ export function buildCooldownExpiredDmEmbed(gamemode: Gamemode): EmbedBuilder {
       [
         `Your ${gamemodeEmoji} **${gamemodeName}** cooldown has ended — you're all clear!`,
         "",
-        `Head to the waitlist panel to re-register for your next test.`,
+        `Head to the waitlist panel to re-register, or use \`/rewards\` to remove future cooldowns early.`,
       ].join("\n")
     )
     .setColor(PURPLE)
