@@ -514,6 +514,31 @@ export function buildCooldownExpiredDmEmbed(gamemode: Gamemode): EmbedBuilder {
     .setTimestamp();
 }
 
+export function buildUnrestrictDmEmbed(params: {
+  type: string;
+  tiersRestored: number;
+}): EmbedBuilder {
+  const { type, tiersRestored } = params;
+  const typeName = type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+  return new EmbedBuilder()
+    .setTitle("✅ Restriction Lifted")
+    .setDescription(
+      [
+        `Your **${typeName}** restriction in **Matrix Tierlist** has been removed.`,
+        "",
+        tiersRestored > 0
+          ? `Your previous rank${tiersRestored > 1 ? "s" : ""} (${tiersRestored} gamemode${tiersRestored > 1 ? "s" : ""}) have been restored.`
+          : "No previous ranks were on record to restore.",
+        "",
+        "You are free to participate in testing again.",
+      ].join("\n")
+    )
+    .setColor(0x57F287)
+    .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+    .setTimestamp();
+}
+
 export function buildRestrictionDmEmbed(params: {
   type: string;
   isPermanent: boolean;
