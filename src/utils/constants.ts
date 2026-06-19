@@ -171,6 +171,20 @@ export const EMBED_COLORS = {
   red_border: 0xed4245,
 } as const;
 
+export const INVITE_COSTS: Record<string, number> = {
+  lt3_and_below: 2,
+  ht3: 10,
+  lt2_and_above: 25,
+};
+
+export function getInviteCostForTier(tier: Tier | null): { cost: number; label: string } {
+  if (!tier) return { cost: 2, label: "LT3 & Below" };
+  const order = TIER_ORDER[tier];
+  if (order >= TIER_ORDER["LT2"]) return { cost: 25, label: "LT2 & Above" };
+  if (tier === "HT3") return { cost: 10, label: "HT3" };
+  return { cost: 2, label: "LT3 & Below" };
+}
+
 export const REDEEM_REWARDS = [
   { value: "lt3_cooldown_removal",  label: "LT3 & Below Cooldown Removal (10 tests)",    cost: 10 },
   { value: "custom_role_7d",        label: "Custom Role — 7 Days (15 tests)",             cost: 15 },
