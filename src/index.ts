@@ -5,6 +5,7 @@ import { Client, GatewayIntentBits, Partials } from "discord.js";
 import { config } from "./config";
 import { registerReadyEvent } from "./events/ready";
 import { registerInteractionEvent } from "./events/interactionCreate";
+import { deployCommands } from "./deploy-commands";
 import "./commands";
 
 const client = new Client({
@@ -32,7 +33,9 @@ process.on("uncaughtException", (err) => {
   console.error("[Uncaught Exception]", err);
 });
 
-client.login(config.token).catch((err) => {
-  console.error("Failed to login:", err);
-  process.exit(1);
-});
+deployCommands()
+  .then(() => client.login(config.token))
+  .catch((err) => {
+    console.error("Startup failed:", err);
+    process.exit(1);
+  });
