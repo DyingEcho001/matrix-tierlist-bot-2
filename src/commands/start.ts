@@ -55,20 +55,18 @@ export const startCommand = {
 
     const queue = await getOrCreateQueue(gamemode, region);
 
-    const alreadyTesting = await db
-      .select()
+    // Block opening a second queue while already active in one
+    const anyActiveQueue = await db
+      .select({ queue: queues })
       .from(queueTesters)
-      .where(
-        and(
-          eq(queueTesters.queueId, queue.id),
-          eq(queueTesters.discordId, member.id)
-        )
-      )
+      .innerJoin(queues, eq(queueTesters.queueId, queues.id))
+      .where(eq(queueTesters.discordId, member.id))
       .limit(1);
 
-    if (alreadyTesting.length > 0) {
+    if (anyActiveQueue.length > 0) {
+      const active = anyActiveQueue[0].queue;
       await interaction.editReply({
-        content: "❌ You are already in this queue as a tester.",
+        content: `❌ You already have an active **${GAMEMODES[active.gamemode as keyof typeof GAMEMODES]}** (${active.region}) queue open. Use \`/end\` to close it before starting a new one.`,
       });
       return;
     }
