@@ -9,6 +9,7 @@ import { restrictions, tiers, shameRoles } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import { requireStaff } from "../utils/permissions";
 import { logCommand } from "../handlers/audit";
+import { buildUnrestrictDmEmbed } from "../utils/embeds";
 
 export const unrestrictCommand = {
   data: new SlashCommandBuilder()
@@ -95,6 +96,17 @@ export const unrestrictCommand = {
           .catch(() => null);
       }
     }
+
+    await targetUser
+      .send({
+        embeds: [
+          buildUnrestrictDmEmbed({
+            type: restriction.type,
+            tiersRestored: prevTiers?.length ?? 0,
+          }),
+        ],
+      })
+      .catch(() => null);
 
     await interaction.editReply({
       content: [
