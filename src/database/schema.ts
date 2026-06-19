@@ -62,6 +62,17 @@ export const cooldowns = pgTable(
   ]
 );
 
+export const playerInvites = pgTable(
+  "player_invites",
+  {
+    id: serial("id").primaryKey(),
+    discordId: text("discord_id").notNull().unique(),
+    balance: integer("balance").notNull().default(0),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (t) => [index("player_invites_discord_id_idx").on(t.discordId)]
+);
+
 export const restrictions = pgTable(
   "restrictions",
   {
