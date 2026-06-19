@@ -118,6 +118,7 @@ export const playerDataCommand = {
             createdAt: activeRestriction[0].createdAt!,
             expiresAt: activeRestriction[0].expiresAt,
             isPermanent: activeRestriction[0].isPermanent ?? false,
+            reason: activeRestriction[0].reason,
           }
         : null,
       queriedBy: member.id,
