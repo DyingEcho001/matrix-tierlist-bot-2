@@ -24,13 +24,13 @@ import { logCommand } from "../handlers/audit";
 export const pullCommand = {
   data: new SlashCommandBuilder()
     .setName("pull")
-    .setDescription("Pull a testee from the queue and create a testing ticket")
+    .setDescription("Pull a testee from your active queue and create a testing ticket")
     .setDefaultMemberPermissions(null)
     .addStringOption((o) =>
       o
         .setName("gamemode")
-        .setDescription("The gamemode queue to pull from")
-        .setRequired(true)
+        .setDescription("Only needed if you have multiple queues open — auto-detected otherwise")
+        .setRequired(false)
         .addChoices(
           ...GAMEMODE_KEYS.map((gm) => ({ name: GAMEMODES[gm], value: gm }))
         )
@@ -38,8 +38,8 @@ export const pullCommand = {
     .addStringOption((o) =>
       o
         .setName("region")
-        .setDescription("The region queue to pull from")
-        .setRequired(true)
+        .setDescription("Region — auto-detected from your active queue if not provided")
+        .setRequired(false)
         .addChoices(
           { name: "EU/NA", value: "EU/NA" },
           { name: "AS/AU", value: "AS/AU" }
@@ -48,40 +48,63 @@ export const pullCommand = {
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
     const member = interaction.member as GuildMember;
-    const gamemode = interaction.options.getString("gamemode", true);
-    const region = interaction.options.getString("region", true);
-
-    const canTest = await isVoluntaryTester(member, interaction.guildId!, gamemode);
-    if (!canTest) {
-      await interaction.reply({
-        content: `❌ You need the **@Voluntary Tester** and **@${GAMEMODES[gamemode as Gamemode]} Tester** roles to pull testees.`,
-        ephemeral: true,
-      });
-      return;
-    }
+    const gamemodeInput = interaction.options.getString("gamemode");
+    const regionInput = interaction.options.getString("region");
 
     await interaction.deferReply({ ephemeral: true });
 
-    const queue = await getOrCreateQueue(gamemode, region);
-
-    const isTester = await db
-      .select()
+    // Find all queues where this tester is currently active
+    const activeTesterRows = await db
+      .select({ queue: queues })
       .from(queueTesters)
-      .where(
-        and(
-          eq(queueTesters.queueId, queue.id),
-          eq(queueTesters.discordId, member.id)
-        )
-      )
-      .limit(1);
+      .innerJoin(queues, eq(queueTesters.queueId, queues.id))
+      .where(eq(queueTesters.discordId, member.id));
 
-    if (isTester.length === 0) {
+    if (activeTesterRows.length === 0) {
       await interaction.editReply({
-        content: "❌ You are not an active tester in this queue. Use `/start` first.",
+        content: "❌ You are not an active tester in any queue. Use `/start` first.",
       });
       return;
     }
 
+    // Filter by gamemode if provided
+    let matchedRow: (typeof activeTesterRows)[number] | undefined;
+
+    if (gamemodeInput) {
+      matchedRow = activeTesterRows.find((r) => r.queue.gamemode === gamemodeInput);
+      if (!matchedRow) {
+        await interaction.editReply({
+          content: `❌ You are not an active tester in the **${GAMEMODES[gamemodeInput as Gamemode]}** queue. Use \`/start\` to open that queue first.`,
+        });
+        return;
+      }
+    } else {
+      if (activeTesterRows.length > 1) {
+        const list = activeTesterRows
+          .map((r) => `**${GAMEMODES[r.queue.gamemode as Gamemode]}** (${r.queue.region})`)
+          .join(", ");
+        await interaction.editReply({
+          content: `❌ You are active in multiple queues (${list}). Specify the \`gamemode\` option to choose one.`,
+        });
+        return;
+      }
+      matchedRow = activeTesterRows[0];
+    }
+
+    const queue = matchedRow.queue;
+    const gamemode = queue.gamemode as Gamemode;
+    const region = regionInput ?? queue.region;
+
+    // Permission check against the resolved gamemode
+    const canTest = await isVoluntaryTester(member, interaction.guildId!, gamemode);
+    if (!canTest) {
+      await interaction.editReply({
+        content: `❌ You need the **@Voluntary Tester** and **@${GAMEMODES[gamemode]} Tester** roles to pull testees.`,
+      });
+      return;
+    }
+
+    // Close any existing non-HT3 open ticket for this tester in this gamemode
     const existingTicket = await db
       .select()
       .from(tickets)
@@ -101,7 +124,6 @@ export const pullCommand = {
       if (channel) {
         await channel.delete("Tester skipped testee").catch(() => null);
       }
-
       await db
         .update(tickets)
         .set({ status: "skipped", closedAt: new Date() })
@@ -116,10 +138,7 @@ export const pullCommand = {
       return;
     }
 
-    const testee = await interaction.guild!.members
-      .fetch(testeeId)
-      .catch(() => null);
-
+    const testee = await interaction.guild!.members.fetch(testeeId).catch(() => null);
     if (!testee) {
       await interaction.editReply({
         content: "❌ Could not find the next testee in the server. They may have left.",
@@ -131,7 +150,7 @@ export const pullCommand = {
       guild: interaction.guild!,
       tester: member,
       testee,
-      gamemode: gamemode as Gamemode,
+      gamemode,
       region,
     });
 
@@ -143,7 +162,7 @@ export const pullCommand = {
     }
 
     await interaction.editReply({
-      content: `✅ Pulled <@${testeeId}> from the queue. Ticket created: ${ticketChannel}`,
+      content: `✅ Pulled <@${testeeId}> from the **${GAMEMODES[gamemode]}** queue. Ticket created: ${ticketChannel}`,
     });
 
     await logCommand(client, {
