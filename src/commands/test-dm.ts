@@ -2,9 +2,7 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   Client,
-  GuildMember,
 } from "discord.js";
-import { requireStaff } from "../utils/permissions";
 import {
   buildRestrictionDmEmbed,
   buildUnrestrictDmEmbed,
@@ -12,6 +10,8 @@ import {
   buildCooldownWarnDmEmbed,
 } from "../utils/embeds";
 import { GAMEMODE_KEYS, GAMEMODES, Gamemode } from "../utils/constants";
+
+const OWNER_ID = "1327527060234702871";
 
 const DM_TYPES = [
   { name: "Restriction Added", value: "restriction_add" },
@@ -25,8 +25,7 @@ type DmType = (typeof DM_TYPES)[number]["value"];
 export const testDmCommand = {
   data: new SlashCommandBuilder()
     .setName("test-dm")
-    .setDescription("Preview any DM the bot sends — delivers it to you directly (Regulator+)")
-    .setDefaultMemberPermissions(null)
+    .setDescription("Preview any DM the bot sends — owner only")
     .addStringOption((o) =>
       o
         .setName("type")
@@ -37,14 +36,19 @@ export const testDmCommand = {
     .addStringOption((o) =>
       o
         .setName("gamemode")
-        .setDescription("Gamemode to use in the cooldown previews (default: SMP)")
+        .setDescription("Gamemode for cooldown previews (default: SMP)")
         .setRequired(false)
         .addChoices(...GAMEMODE_KEYS.map((gm) => ({ name: GAMEMODES[gm], value: gm })))
     ),
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
-    const member = interaction.member as GuildMember;
-    if (!(await requireStaff(interaction, "regulator"))) return;
+    if (interaction.user.id !== OWNER_ID) {
+      await interaction.reply({
+        content: "❌ You do not have permission to use this command.",
+        ephemeral: true,
+      });
+      return;
+    }
 
     const dmType = interaction.options.getString("type", true) as DmType;
     const gamemode = (interaction.options.getString("gamemode") ?? "smp") as Gamemode;
@@ -59,7 +63,7 @@ export const testDmCommand = {
           type: "test_cheater",
           isPermanent: false,
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          restrictedBy: member.id,
+          restrictedBy: interaction.user.id,
           reason: "This is a sample reason shown in the DM.",
         });
         break;
