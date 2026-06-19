@@ -49,6 +49,9 @@ import { redeemCommand } from "./redeem";
 import { bypassCommand } from "./bypass";
 import { addTestsCommand } from "./add-tests";
 import { testDmCommand } from "./test-dm";
+import { rewardsViewCommand } from "./rewards-view";
+import { rewardsCommand } from "./rewards";
+import { addInvitesCommand } from "./add-invites";
 
 const allCommands: Command[] = [
   startCommand,
@@ -92,6 +95,9 @@ const allCommands: Command[] = [
   bypassCommand,
   addTestsCommand,
   testDmCommand,
+  rewardsViewCommand,
+  rewardsCommand,
+  addInvitesCommand,
 ];
 
 for (const cmd of allCommands) {
