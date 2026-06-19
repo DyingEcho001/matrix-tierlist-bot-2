@@ -469,6 +469,77 @@ export function buildTempRoleEmbed(params: {
   return embed;
 }
 
+const PURPLE = 0x9B59B6;
+
+export function buildCooldownWarnDmEmbed(gamemode: Gamemode, expiresAt: Date): EmbedBuilder {
+  const gamemodeName = GAMEMODES[gamemode] ?? gamemode;
+  const gamemodeEmoji = GAMEMODE_EMOJIS[gamemode] ?? "";
+  const expiryUnix = Math.floor(expiresAt.getTime() / 1000);
+
+  return new EmbedBuilder()
+    .setTitle("⏳ Cooldown Expiring Soon")
+    .setDescription(
+      [
+        `Your ${gamemodeEmoji} **${gamemodeName}** cooldown runs out <t:${expiryUnix}:R>.`,
+        "",
+        `You can wait it out, or skip it early with **2 test credits** via \`/redeem view\`.`,
+        `**Current balance:** Check with \`/redeem view\``,
+      ].join("\n")
+    )
+    .setColor(PURPLE)
+    .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+    .setTimestamp();
+}
+
+export function buildCooldownExpiredDmEmbed(gamemode: Gamemode): EmbedBuilder {
+  const gamemodeName = GAMEMODES[gamemode] ?? gamemode;
+  const gamemodeEmoji = GAMEMODE_EMOJIS[gamemode] ?? "";
+
+  return new EmbedBuilder()
+    .setTitle("✅ Cooldown Lifted")
+    .setDescription(
+      [
+        `Your ${gamemodeEmoji} **${gamemodeName}** cooldown has ended — you're all clear!`,
+        "",
+        `Head to the waitlist panel to re-register for your next test.`,
+      ].join("\n")
+    )
+    .setColor(PURPLE)
+    .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+    .setTimestamp();
+}
+
+export function buildRestrictionDmEmbed(params: {
+  type: string;
+  isPermanent: boolean;
+  expiresAt: Date | null;
+  restrictedBy: string;
+}): EmbedBuilder {
+  const { type, isPermanent, expiresAt, restrictedBy } = params;
+  const typeName = type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+  const durationText = isPermanent
+    ? "**Permanent** — this restriction does not expire."
+    : expiresAt
+    ? `Expires <t:${Math.floor(expiresAt.getTime() / 1000)}:R> — on <t:${Math.floor(expiresAt.getTime() / 1000)}:D>.`
+    : "Duration unknown.";
+
+  return new EmbedBuilder()
+    .setTitle("⛔ You Have Been Restricted")
+    .setDescription(
+      [
+        `You have received a **${typeName}** restriction in **Matrix Tierlist**.`,
+        "",
+        durationText,
+        "",
+        "If you believe this is an error, please reach out to a staff member.",
+      ].join("\n")
+    )
+    .setColor(0xED4245)
+    .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+    .setTimestamp();
+}
+
 export function buildRedeemEmbed(params: {
   testerId: string;
   reward: string;
