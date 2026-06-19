@@ -53,6 +53,8 @@ export const cooldowns = pgTable(
     gamemode: text("gamemode").notNull(),
     expiresAt: timestamp("expires_at").notNull(),
     createdAt: timestamp("created_at").defaultNow(),
+    warnDmSent: boolean("warn_dm_sent").default(false),
+    expiredDmSent: boolean("expired_dm_sent").default(false),
   },
   (t) => [
     unique("cooldowns_discord_gamemode_unique").on(t.discordId, t.gamemode),
