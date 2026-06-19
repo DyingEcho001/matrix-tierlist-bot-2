@@ -261,6 +261,7 @@ export function buildPlayerDataEmbed(params: {
     createdAt: Date;
     expiresAt?: Date | null;
     isPermanent: boolean;
+    reason?: string | null;
   } | null;
   queriedBy?: string;
 }): EmbedBuilder {
@@ -327,13 +328,17 @@ export function buildPlayerDataEmbed(params: {
       ? `<t:${Math.floor(restriction.expiresAt.getTime() / 1000)}:R>`
       : "Unknown";
 
+    const restrictionLines = [
+      `**Restricted:** <t:${Math.floor(restriction.createdAt.getTime() / 1000)}:f>`,
+      `**Expires:** ${expiresText}`,
+      `**Shame Role:** ${restriction.type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}`,
+    ];
+    if (restriction.reason && restriction.reason !== "manual") {
+      restrictionLines.push(`**Reason:** ${restriction.reason}`);
+    }
     embed.addFields({
       name: "⛔ Active Restriction",
-      value: [
-        `**Restricted:** <t:${Math.floor(restriction.createdAt.getTime() / 1000)}:f>`,
-        `**Expires:** ${expiresText}`,
-        `**Shame Role:** @${restriction.type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}`,
-      ].join("\n"),
+      value: restrictionLines.join("\n"),
       inline: false,
     });
   }
@@ -514,8 +519,9 @@ export function buildRestrictionDmEmbed(params: {
   isPermanent: boolean;
   expiresAt: Date | null;
   restrictedBy: string;
+  reason?: string | null;
 }): EmbedBuilder {
-  const { type, isPermanent, expiresAt, restrictedBy } = params;
+  const { type, isPermanent, expiresAt, reason } = params;
   const typeName = type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   const durationText = isPermanent
@@ -524,17 +530,22 @@ export function buildRestrictionDmEmbed(params: {
     ? `Expires <t:${Math.floor(expiresAt.getTime() / 1000)}:R> — on <t:${Math.floor(expiresAt.getTime() / 1000)}:D>.`
     : "Duration unknown.";
 
+  const lines = [
+    `You have received a **${typeName}** restriction in **Matrix Tierlist**.`,
+    `**Shame Role:** ${typeName}`,
+    "",
+    durationText,
+  ];
+
+  if (reason && reason !== "manual") {
+    lines.push("", `**Reason:** ${reason}`);
+  }
+
+  lines.push("", "If you believe this is an error, please reach out to a staff member.");
+
   return new EmbedBuilder()
     .setTitle("⛔ You Have Been Restricted")
-    .setDescription(
-      [
-        `You have received a **${typeName}** restriction in **Matrix Tierlist**.`,
-        "",
-        durationText,
-        "",
-        "If you believe this is an error, please reach out to a staff member.",
-      ].join("\n")
-    )
+    .setDescription(lines.join("\n"))
     .setColor(0xED4245)
     .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
     .setTimestamp();
