@@ -14,6 +14,7 @@ import { eq, and } from "drizzle-orm";
 import { requireStaff, hasStaffRole } from "../utils/permissions";
 import { logCommand } from "../handlers/audit";
 import { parseDuration } from "../utils/permissions";
+import { buildRestrictionDmEmbed } from "../utils/embeds";
 
 export const restrictCommand = {
   data: new SlashCommandBuilder()
@@ -124,6 +125,19 @@ export const restrictCommand = {
       isActive: true,
       previousTiers: previousTiers.length > 0 ? previousTiers : null,
     });
+
+    await targetUser
+      .send({
+        embeds: [
+          buildRestrictionDmEmbed({
+            type: category,
+            isPermanent,
+            expiresAt,
+            restrictedBy: member.id,
+          }),
+        ],
+      })
+      .catch(() => null);
 
     const shameRoleName =
       category === "test_cheater" ? "Test Cheater" : "Hacking Subhuman";
