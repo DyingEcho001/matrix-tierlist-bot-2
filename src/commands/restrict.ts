@@ -45,6 +45,12 @@ export const restrictCommand = {
         .setName("duration")
         .setDescription("Duration (e.g. 30d, 1h) — required if not permanent")
         .setRequired(false)
+    )
+    .addStringOption((o) =>
+      o
+        .setName("reason")
+        .setDescription("Reason for the restriction (shown to the player and in their data)")
+        .setRequired(false)
     ),
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
@@ -55,6 +61,7 @@ export const restrictCommand = {
     const category = interaction.options.getString("category", true);
     const isPermanent = interaction.options.getBoolean("permanent", true);
     const durationStr = interaction.options.getString("duration");
+    const reason = interaction.options.getString("reason");
 
     if (isPermanent) {
       const canPermanent = await hasStaffRole(
@@ -120,6 +127,7 @@ export const restrictCommand = {
       discordId: targetUser.id,
       type: category,
       restrictedBy: member.id,
+      reason: reason ?? "manual",
       isPermanent,
       expiresAt,
       isActive: true,
@@ -134,6 +142,7 @@ export const restrictCommand = {
             isPermanent,
             expiresAt,
             restrictedBy: member.id,
+            reason,
           }),
         ],
       })
