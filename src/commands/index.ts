@@ -48,6 +48,7 @@ import { tierWipeCommand } from "./tier-wipe";
 import { redeemCommand } from "./redeem";
 import { bypassCommand } from "./bypass";
 import { addTestsCommand } from "./add-tests";
+import { testDmCommand } from "./test-dm";
 
 const allCommands: Command[] = [
   startCommand,
@@ -90,6 +91,7 @@ const allCommands: Command[] = [
   redeemCommand,
   bypassCommand,
   addTestsCommand,
+  testDmCommand,
 ];
 
 for (const cmd of allCommands) {
