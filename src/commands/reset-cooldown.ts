@@ -10,6 +10,7 @@ import { eq, and } from "drizzle-orm";
 import { GAMEMODE_KEYS, GAMEMODES, Gamemode } from "../utils/constants";
 import { requireStaff } from "../utils/permissions";
 import { logCommand } from "../handlers/audit";
+import { buildCooldownExpiredDmEmbed } from "../utils/embeds";
 
 export const resetCooldownCommand = {
   data: new SlashCommandBuilder()
@@ -64,6 +65,10 @@ export const resetCooldownCommand = {
           eq(cooldowns.gamemode, gamemode)
         )
       );
+
+    await targetUser
+      .send({ embeds: [buildCooldownExpiredDmEmbed(gamemode)] })
+      .catch(() => null);
 
     await interaction.editReply({
       content: `✅ Cooldown for <@${targetUser.id}> in **${GAMEMODES[gamemode]}** has been reset.`,
