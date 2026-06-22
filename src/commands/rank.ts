@@ -73,7 +73,7 @@ export const rankCommand = {
 
       if (!bypassRow[0]) {
         await interaction.editReply({
-          content: "❌ Staff cannot use `/rank` on themselves. Only members on the bypass list may self-rank.",
+          content: "❌ You cannot use this command on yourself.",
         });
         return;
       }
