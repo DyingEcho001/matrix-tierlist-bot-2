@@ -51,6 +51,8 @@ export const failEvalCommand = {
       tier: "LT3",
       closedBy: member.id,
       skipCooldown: false,
+      isHt3Eval: true,
+      ht3Passed: false,
     });
 
     await logCommand(client, {
