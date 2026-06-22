@@ -9,6 +9,7 @@ import {
 import {
   GAMEMODES,
   TIER_LABELS,
+  TIER_ORDER,
   EMBED_COLORS,
   Gamemode,
   Tier,
@@ -212,6 +213,13 @@ export function buildTicketInfoEmbed(params: {
     .setTimestamp();
 }
 
+function getResultColor(tier: Tier): number {
+  const order = TIER_ORDER[tier];
+  if (order >= TIER_ORDER["HT3"]) return 0x9B59B6;  // Purple: HT3 → HT1
+  if (tier === "LT3") return 0xfcba03;               // Gold: LT3
+  return 0x95A5A6;                                    // Grey: HT4 and below
+}
+
 export function buildTestResultEmbed(params: {
   testeeId: string;
   testerId: string;
@@ -222,16 +230,18 @@ export function buildTestResultEmbed(params: {
   tier: Tier;
   previousTier?: string | null;
   cooldownDays: number;
+  isHt3Eval?: boolean;
+  ht3Passed?: boolean;
 }): EmbedBuilder {
-  const { testeeId, testerId, testeeAvatarURL, ign, region, gamemode, tier, previousTier, cooldownDays } = params;
+  const { testeeId, testerId, testeeAvatarURL, ign, region, gamemode, tier, previousTier, cooldownDays, isHt3Eval, ht3Passed } = params;
 
-  return new EmbedBuilder()
+  const embed = new EmbedBuilder()
     .setAuthor({
       name: `${ign}'s Test Results`,
       iconURL: testeeAvatarURL,
     })
     .setDescription("🏆")
-    .setColor(0xed4245)
+    .setColor(getResultColor(tier))
     .setThumbnail(`https://visage.surgeplay.com/bust/128/${ign}`)
     .addFields(
       { name: "Tester:", value: `<@${testerId}>`, inline: false },
@@ -241,6 +251,16 @@ export function buildTestResultEmbed(params: {
       { name: "Previous Rank:", value: previousTier ? TIER_LABELS[previousTier as Tier] ?? previousTier : "Unranked", inline: false },
       { name: "Rank Earned:", value: TIER_LABELS[tier], inline: false }
     );
+
+  if (isHt3Eval) {
+    embed.addFields({
+      name: "HT3 Evaluation:",
+      value: ht3Passed ? "✅ Passed" : "❌ Failed",
+      inline: false,
+    });
+  }
+
+  return embed;
 }
 
 export function buildPlayerDataEmbed(params: {
@@ -367,9 +387,9 @@ export function buildEvalEmbed(): {
     .setTitle("⚖️ HT3 Evaluation")
     .setDescription(
       [
-        "**Test for HT3** — The ticket will be transferred to an new category and a HT3 tester will be assigned to you",
+        "**Test for HT3** — Your testing ticket will be transferred to another category and an HT3 evaluator will be assigned by a staff",
         "─────────────────────────────────────────",
-        "**Stay as LT3** — The you will be ranked as LT3 and the ticket will close normally.",
+        "**Stay as LT3** — You will be ranked as LT3",
         "",
         "*Choose wisely*",
       ].join("\n")
