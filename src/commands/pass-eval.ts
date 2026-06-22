@@ -48,6 +48,8 @@ export const passEvalCommand = {
       tier: "HT3",
       closedBy: member.id,
       skipCooldown: true,
+      isHt3Eval: true,
+      ht3Passed: true,
     });
 
     await logCommand(client, {
