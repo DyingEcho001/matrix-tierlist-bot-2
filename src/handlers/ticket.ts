@@ -20,7 +20,8 @@ import {
 } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import { buildTicketInfoEmbed, buildTestResultEmbed } from "../utils/embeds";
-import { GAMEMODES, Gamemode, Tier, COOLDOWNS, HT3_PLUS_TIERS } from "../utils/constants";
+import { GAMEMODES, TIER_LABELS, Gamemode, Tier, COOLDOWNS, HT3_PLUS_TIERS } from "../utils/constants";
+import { EmbedBuilder } from "discord.js";
 
 export async function applyTierRole(params: {
   client: Client;
@@ -219,8 +220,10 @@ export async function closeTicket(params: {
   tier: Tier;
   closedBy: string;
   skipCooldown?: boolean;
+  isHt3Eval?: boolean;
+  ht3Passed?: boolean;
 }): Promise<void> {
-  const { client, ticket, tier, closedBy, skipCooldown = false } = params;
+  const { client, ticket, tier, closedBy, skipCooldown = false, isHt3Eval = false, ht3Passed = false } = params;
 
   const isHT3Plus = HT3_PLUS_TIERS.includes(tier);
   const cooldownMs = isHT3Plus ? COOLDOWNS.ht3 : COOLDOWNS.normal;
@@ -323,6 +326,8 @@ export async function closeTicket(params: {
         tier,
         previousTier,
         cooldownDays: skipCooldown ? 0 : cooldownDays,
+        isHt3Eval,
+        ht3Passed,
       });
 
       const resultsChannelId = await getChannelId(ticket.guildId, "results");
@@ -344,7 +349,7 @@ export async function closeTicket(params: {
       .catch(() => null)) as TextChannel | null;
 
     if (channel) {
-      await sendTranscript(client, ticket, channel);
+      await sendTranscript(client, ticket, channel, tier, isHt3Eval, ht3Passed);
       setTimeout(async () => {
         await channel.delete("Ticket closed").catch(() => null);
       }, 3000);
@@ -490,7 +495,10 @@ function buildHtmlTranscript(
 export async function sendTranscript(
   client: Client,
   ticket: typeof tickets.$inferSelect,
-  channel: TextChannel
+  channel: TextChannel,
+  tierGiven?: Tier,
+  isHt3Eval?: boolean,
+  ht3Passed?: boolean
 ): Promise<void> {
   try {
     const transcriptChannelId = await getChannelId(ticket.guildId, "transcript");
@@ -522,9 +530,25 @@ export async function sendTranscript(
     const fileName = `transcript-${ticket.id}-${ticket.gamemode}-${Date.now()}.html`;
 
     const gamemodeName = GAMEMODES[ticket.gamemode as Gamemode] ?? ticket.gamemode;
+    const tierLabel = tierGiven ? (TIER_LABELS[tierGiven] ?? tierGiven) : "Unknown";
+
+    const transcriptEmbed = new EmbedBuilder()
+      .setTitle(`📋 Ticket #${ticket.id} Transcript`)
+      .setColor(0x9B59B6)
+      .addFields(
+        { name: "Tester", value: `<@${ticket.testerId}>`, inline: false },
+        { name: "Testee", value: `<@${ticket.testeeId}>`, inline: false },
+        { name: "Tier Given", value: tierLabel, inline: false },
+        { name: "Gamemode", value: gamemodeName, inline: false },
+        { name: "HT3 Evaluation", value: isHt3Eval ? "Yes" : "No", inline: false },
+        ...(isHt3Eval
+          ? [{ name: "HT3 Evaluation Result", value: ht3Passed ? "✅ Passed" : "❌ Failed", inline: false }]
+          : []),
+      )
+      .setTimestamp();
 
     await transcriptChannel.send({
-      content: `📋 Transcript for ticket #${ticket.id} | ${gamemodeName} | Tester: <@${ticket.testerId}> | Testee: <@${ticket.testeeId}>`,
+      embeds: [transcriptEmbed],
       files: [{ attachment: buffer, name: fileName }],
     });
   } catch (err) {
