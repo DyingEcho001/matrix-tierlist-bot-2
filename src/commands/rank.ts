@@ -17,6 +17,7 @@ import {
   HT3_PLUS_TIERS,
 } from "../utils/constants";
 import { requireStaff } from "../utils/permissions";
+import { commandBypasses } from "../database/schema";
 import { sendResultToChannel, incrementTesterStats, applyTierRole } from "../handlers/ticket";
 import { logCommand } from "../handlers/audit";
 
@@ -57,6 +58,26 @@ export const rankCommand = {
     const gamemode = interaction.options.getString("gamemode", true) as Gamemode;
 
     await interaction.deferReply({ ephemeral: true });
+
+    if (targetUser.id === member.id) {
+      const bypassRow = await db
+        .select()
+        .from(commandBypasses)
+        .where(
+          and(
+            eq(commandBypasses.guildId, interaction.guildId!),
+            eq(commandBypasses.discordId, member.id)
+          )
+        )
+        .limit(1);
+
+      if (!bypassRow[0]) {
+        await interaction.editReply({
+          content: "❌ Staff cannot use `/rank` on themselves. Only members on the bypass list may self-rank.",
+        });
+        return;
+      }
+    }
 
     const isHT3Plus = HT3_PLUS_TIERS.includes(tier);
     const cooldownMs = isHT3Plus ? COOLDOWNS.ht3 : COOLDOWNS.normal;
