@@ -52,6 +52,7 @@ import { testDmCommand } from "./test-dm";
 import { rewardsViewCommand } from "./rewards-view";
 import { rewardsCommand } from "./rewards";
 import { addInvitesCommand } from "./add-invites";
+import { migrateCommand } from "./migrate";
 
 const allCommands: Command[] = [
   startCommand,
@@ -98,6 +99,7 @@ const allCommands: Command[] = [
   rewardsViewCommand,
   rewardsCommand,
   addInvitesCommand,
+  migrateCommand,
 ];
 
 for (const cmd of allCommands) {
