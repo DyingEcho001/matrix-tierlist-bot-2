@@ -79,9 +79,7 @@ export async function requireStaff(
   const ok = await hasStaffRole(member, interaction.guildId!, required);
   if (!ok) {
     await interaction.reply({
-      content: `❌ You need the **${required
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase())}** role or higher to use this command.`,
+      content: "❌ You don't have the required permissions to use this command.",
       ephemeral: true,
     });
   }
