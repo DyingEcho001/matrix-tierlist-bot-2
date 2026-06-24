@@ -392,14 +392,13 @@ export function buildEvalEmbed(params: {
 
   const embed = new EmbedBuilder()
     .setTitle("⚖️ Evaluation Result")
-    .setColor(0x9B59B6)
-    .addFields(
-      { name: "User", value: `<@${testeeId}>`, inline: false },
-      { name: "Gamemode", value: gamemodeName, inline: false },
-      { name: "Region", value: region, inline: false }
-    )
+    .setColor(EMBED_COLORS.warning)
     .setDescription(
       [
+        `**User:** <@${testeeId}>`,
+        `**Gamemode:** ${gamemodeName}`,
+        `**Region:** ${region}`,
+        "",
         "**Choose an option below:**",
         "",
         "🟢 **Choose LT3** — Rank as Low Tier 3 with a 30-day cooldown.",
