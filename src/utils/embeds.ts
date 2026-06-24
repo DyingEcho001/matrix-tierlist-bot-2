@@ -401,7 +401,7 @@ export function buildEvalEmbed(params: {
         "",
         "**Choose an option below:**",
         "",
-        "🟢 **Choose LT3** — Rank as Low Tier 3 with a 30-day cooldown.",
+        "🟢 **Choose LT3** — Rank as Low Tier 3 with a 5-day cooldown.",
         "🔵 **Go for HT3** — Transfer to HT3 Tests for further evaluation.",
       ].join("\n")
     );
