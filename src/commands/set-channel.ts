@@ -26,6 +26,7 @@ export const setChannelCommand = {
           { name: "Commands", value: "commands" },
           { name: "Redeem", value: "redeem" },
           { name: "Migrate", value: "migrate" },
+          { name: "Testing Leaderboard", value: "testing_leaderboard" },
         )
     )
     .addChannelOption((o) =>
@@ -61,6 +62,7 @@ export const setChannelCommand = {
       commands: "Commands",
       redeem: "Redeem",
       migrate: "Migrate",
+      testing_leaderboard: "Testing Leaderboard",
     };
 
     await interaction.reply({

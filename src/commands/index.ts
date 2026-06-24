@@ -53,6 +53,7 @@ import { rewardsViewCommand } from "./rewards-view";
 import { rewardsCommand } from "./rewards";
 import { addInvitesCommand } from "./add-invites";
 import { migrateCommand } from "./migrate";
+import { updateLeaderboardCommand } from "./update-leaderboard";
 
 const allCommands: Command[] = [
   startCommand,
@@ -100,6 +101,7 @@ const allCommands: Command[] = [
   rewardsCommand,
   addInvitesCommand,
   migrateCommand,
+  updateLeaderboardCommand,
 ];
 
 for (const cmd of allCommands) {

@@ -2,6 +2,7 @@ import { Client, Events } from "discord.js";
 import { startQueueUpdateLoop } from "../handlers/queue";
 import { startTempRoleChecker } from "../handlers/temprole-checker";
 import { startDmNotifier } from "../handlers/dm-notifier";
+import { startLeaderboardLoop } from "../handlers/leaderboard";
 import { db } from "../database";
 import { restrictions } from "../database/schema";
 import { and, eq, lte, isNotNull } from "drizzle-orm";
@@ -14,6 +15,7 @@ export function registerReadyEvent(client: Client): void {
     startTempRoleChecker(client);
     startRestrictionExpiryChecker(client);
     startDmNotifier(client);
+    startLeaderboardLoop(client);
 
     console.log("✅ Background tasks started.");
   });
