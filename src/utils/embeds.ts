@@ -215,8 +215,7 @@ export function buildTicketInfoEmbed(params: {
 
 function getResultColor(tier: Tier): number {
   const order = TIER_ORDER[tier];
-  if (order >= TIER_ORDER["HT3"]) return 0x9B59B6;  // Purple: HT3 → HT1
-  if (tier === "LT3") return 0xfcba03;               // Gold: LT3
+  if (order >= TIER_ORDER["LT3"]) return 0x9B59B6;  // Purple: LT3 and above
   return 0x95A5A6;                                    // Grey: HT4 and below
 }
 
@@ -392,7 +391,7 @@ export function buildEvalEmbed(params: {
 
   const embed = new EmbedBuilder()
     .setTitle("⚖️ Evaluation Result")
-    .setColor(EMBED_COLORS.warning)
+    .setColor(0x6C3483)
     .setDescription(
       [
         `**User:** <@${testeeId}>`,
