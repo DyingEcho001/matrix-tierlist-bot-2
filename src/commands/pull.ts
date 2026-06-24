@@ -20,6 +20,8 @@ import {
 } from "../handlers/queue";
 import { createTestingTicket } from "../handlers/ticket";
 import { logCommand } from "../handlers/audit";
+import { setPendingPull } from "../handlers/pending-pull";
+import { buildPullConfirmEmbed } from "../utils/embeds";
 
 export const pullCommand = {
   data: new SlashCommandBuilder()
@@ -104,7 +106,7 @@ export const pullCommand = {
       return;
     }
 
-    // Close any existing non-HT3 open ticket for this tester in this gamemode
+    // Check for existing non-HT3 open ticket — ask for confirmation before closing
     const existingTicket = await db
       .select()
       .from(tickets)
@@ -118,16 +120,19 @@ export const pullCommand = {
       .limit(1);
 
     if (existingTicket.length > 0 && existingTicket[0].type !== "ht3") {
-      const channel = (await client.channels
-        .fetch(existingTicket[0].channelId)
-        .catch(() => null)) as TextChannel | null;
-      if (channel) {
-        await channel.delete("Tester skipped testee").catch(() => null);
-      }
-      await db
-        .update(tickets)
-        .set({ status: "skipped", closedAt: new Date() })
-        .where(eq(tickets.id, existingTicket[0].id));
+      setPendingPull(member.id, {
+        memberId: member.id,
+        guildId: interaction.guildId!,
+        queueId: queue.id,
+        gamemode,
+        region,
+        existingTicketId: existingTicket[0].id,
+        existingChannelId: existingTicket[0].channelId,
+      });
+
+      const { content, row } = buildPullConfirmEmbed(existingTicket[0].channelId);
+      await interaction.editReply({ content, components: [row] });
+      return;
     }
 
     const testeeId = await popFromQueueWithPriority(queue.id, interaction.guildId!, client);

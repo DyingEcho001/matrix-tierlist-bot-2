@@ -39,7 +39,11 @@ export const evalCommand = {
       return;
     }
 
-    const { embed, row } = buildEvalEmbed();
+    const { embed, row } = buildEvalEmbed({
+      testeeId: ticket.testeeId,
+      gamemode: ticket.gamemode as import("../utils/constants").Gamemode,
+      region: ticket.region,
+    });
     await interaction.reply({ embeds: [embed], components: [row] });
 
     await db

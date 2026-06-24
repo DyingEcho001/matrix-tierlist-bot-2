@@ -24,10 +24,11 @@ import {
   staffRoles as staffRolesTable,
 } from "../database/schema";
 import { eq, and } from "drizzle-orm";
-import { getOrCreateQueue, addToQueue } from "../handlers/queue";
-import { getTicketByChannel } from "../handlers/ticket";
-import { GAMEMODES, GAMEMODE_KEYS, Gamemode } from "../utils/constants";
+import { getOrCreateQueue, addToQueue, popFromQueueWithPriority } from "../handlers/queue";
+import { getTicketByChannel, closeTicket, incrementTesterStats, createTestingTicket } from "../handlers/ticket";
+import { GAMEMODES, GAMEMODE_KEYS, Gamemode, Tier } from "../utils/constants";
 import { hasCommandBypass } from "../utils/permissions";
+import { getPendingPull, deletePendingPull } from "../handlers/pending-pull";
 
 const buttonRateLimit = new Map<string, number>();
 const BUTTON_COOLDOWN_MS = 3000;
@@ -366,6 +367,22 @@ async function handleButtonInteraction(
     await handleEvalLT3(interaction, client);
     return;
   }
+
+  if (customId === "pull_close_and_pull_new") {
+    await handlePullCloseAndPullNew(interaction, client);
+    return;
+  }
+
+  if (customId === "pull_cancel") {
+    deletePendingPull(interaction.user.id);
+    await interaction.update({ content: "Cancelled.", components: [] });
+    return;
+  }
+
+  if (customId.startsWith("close_confirm:")) {
+    await handleCloseConfirm(interaction, client);
+    return;
+  }
 }
 
 async function handleEvalHT3(
@@ -453,6 +470,106 @@ async function handleEvalLT3(
   const { closeTicket, incrementTesterStats } = await import("../handlers/ticket");
   await incrementTesterStats(ticket.testerId);
   await closeTicket({ client, ticket, tier: "LT3", closedBy: member.id });
+}
+
+async function handlePullCloseAndPullNew(
+  interaction: ButtonInteraction,
+  client: Client
+): Promise<void> {
+  const member = interaction.member as GuildMember;
+  const pending = getPendingPull(member.id);
+
+  if (!pending) {
+    await interaction.update({ content: "❌ No pending pull found. Please run `/pull` again.", components: [] });
+    return;
+  }
+
+  deletePendingPull(member.id);
+
+  await interaction.update({ content: "⏳ Closing old ticket and pulling a new user...", components: [] });
+
+  // Close the existing ticket
+  const existingChannel = (await client.channels
+    .fetch(pending.existingChannelId)
+    .catch(() => null)) as TextChannel | null;
+  if (existingChannel) {
+    await existingChannel.delete("Tester closed and pulled new").catch(() => null);
+  }
+  await db
+    .update(tickets)
+    .set({ status: "skipped", closedAt: new Date() })
+    .where(eq(tickets.id, pending.existingTicketId));
+
+  // Pull next from queue
+  const testeeId = await popFromQueueWithPriority(pending.queueId, pending.guildId, client);
+  if (!testeeId) {
+    await interaction.editReply({ content: "❌ The queue is empty. No one to pull." });
+    return;
+  }
+
+  const guild = await client.guilds.fetch(pending.guildId).catch(() => null);
+  if (!guild) {
+    await interaction.editReply({ content: "❌ Could not resolve the server." });
+    return;
+  }
+
+  const testee = await guild.members.fetch(testeeId).catch(() => null);
+  if (!testee) {
+    await interaction.editReply({ content: "❌ Could not find the next testee in the server. They may have left." });
+    return;
+  }
+
+  const ticketChannel = await createTestingTicket({
+    guild,
+    tester: member,
+    testee,
+    gamemode: pending.gamemode,
+    region: pending.region,
+  });
+
+  if (!ticketChannel) {
+    await interaction.editReply({ content: "❌ Failed to create the testing ticket. Check bot permissions." });
+    return;
+  }
+
+  await interaction.editReply({
+    content: `✅ Pulled <@${testeeId}> from the **${GAMEMODES[pending.gamemode]}** queue. Ticket created: ${ticketChannel}`,
+  });
+}
+
+async function handleCloseConfirm(
+  interaction: ButtonInteraction,
+  client: Client
+): Promise<void> {
+  const member = interaction.member as GuildMember;
+  const tier = interaction.customId.replace("close_confirm:", "") as Tier;
+
+  const ticket = await getTicketByChannel(interaction.channelId);
+
+  if (!ticket) {
+    await interaction.update({ content: "❌ Could not find the ticket for this channel.", embeds: [], components: [] });
+    return;
+  }
+
+  if (ticket.testerId !== member.id) {
+    await interaction.reply({ content: "❌ Only the tester who opened this ticket can confirm closing it.", ephemeral: true });
+    return;
+  }
+
+  await interaction.update({
+    content: `✅ Closing ticket and assigning **${tier}** to <@${ticket.testeeId}>...`,
+    embeds: [],
+    components: [],
+  });
+
+  await incrementTesterStats(member.id);
+
+  await closeTicket({
+    client,
+    ticket,
+    tier,
+    closedBy: member.id,
+  });
 }
 
 async function handleModalSubmit(

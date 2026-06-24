@@ -379,35 +379,92 @@ export function buildPlayerDataEmbed(params: {
   return embed;
 }
 
-export function buildEvalEmbed(): {
+export function buildEvalEmbed(params: {
+  testeeId: string;
+  gamemode: Gamemode;
+  region: string;
+}): {
   embed: EmbedBuilder;
   row: ActionRowBuilder<ButtonBuilder>;
 } {
+  const { testeeId, gamemode, region } = params;
+  const gamemodeName = GAMEMODES[gamemode] ?? gamemode;
+
   const embed = new EmbedBuilder()
-    .setTitle("⚖️ HT3 Evaluation")
+    .setTitle("⚖️ Evaluation Result")
+    .setColor(0x9B59B6)
+    .addFields(
+      { name: "User", value: `<@${testeeId}>`, inline: false },
+      { name: "Gamemode", value: gamemodeName, inline: false },
+      { name: "Region", value: region, inline: false }
+    )
     .setDescription(
       [
-        "**Test for HT3** — Your testing ticket will be transferred to another category and an HT3 evaluator will be assigned by a staff",
-        "─────────────────────────────────────────",
-        "**Stay as LT3** — You will be ranked as LT3",
+        "**Choose an option below:**",
         "",
-        "*Choose wisely*",
+        "🟢 **Choose LT3** — Rank as Low Tier 3 with a 30-day cooldown.",
+        "🔵 **Go for HT3** — Transfer to HT3 Tests for further evaluation.",
       ].join("\n")
-    )
-    .setColor(EMBED_COLORS.warning);
+    );
 
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setCustomId("eval_ht3")
-      .setLabel("Test for HT3")
-      .setStyle(ButtonStyle.Primary),
-    new ButtonBuilder()
       .setCustomId("eval_lt3")
-      .setLabel("Stay as LT3")
-      .setStyle(ButtonStyle.Secondary)
+      .setLabel("Choose LT3")
+      .setStyle(ButtonStyle.Success),
+    new ButtonBuilder()
+      .setCustomId("eval_ht3")
+      .setLabel("Go for HT3")
+      .setStyle(ButtonStyle.Primary)
   );
 
   return { embed, row };
+}
+
+export function buildPullConfirmEmbed(channelId: string): {
+  content: string;
+  row: ActionRowBuilder<ButtonBuilder>;
+} {
+  const content = `⚠️ You already have an active ticket open (<#${channelId}>).\nDo you want to **close it** and pull a new user instead?`;
+
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId("pull_close_and_pull_new")
+      .setLabel("Close & Pull New")
+      .setStyle(ButtonStyle.Danger),
+    new ButtonBuilder()
+      .setCustomId("pull_cancel")
+      .setLabel("Cancel")
+      .setStyle(ButtonStyle.Secondary)
+  );
+
+  return { content, row };
+}
+
+export function buildCloseConfirmEmbed(gamemode: Gamemode, tier: string): {
+  content: string;
+  embed: EmbedBuilder;
+  row: ActionRowBuilder<ButtonBuilder>;
+} {
+  const gamemodeName = GAMEMODES[gamemode] ?? gamemode;
+
+  const content = "Please confirm you want to close this ticket and apply the rank.";
+
+  const embed = new EmbedBuilder()
+    .setTitle("Close Ticket Confirmation")
+    .setDescription(
+      `Are you sure you want to close this ticket for the **${gamemodeName}** queue and assign rank\n**${tier}**?`
+    )
+    .setColor(0x2B2D31);
+
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`close_confirm:${tier}`)
+      .setLabel("Confirm Close")
+      .setStyle(ButtonStyle.Danger)
+  );
+
+  return { content, embed, row };
 }
 
 export function buildAuditLogEmbed(params: {

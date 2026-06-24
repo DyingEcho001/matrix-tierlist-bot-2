@@ -4,12 +4,10 @@ import {
   Client,
   GuildMember,
 } from "discord.js";
-import { db } from "../database";
-import { tickets } from "../database/schema";
-import { eq, and } from "drizzle-orm";
-import { TIERS, Tier } from "../utils/constants";
-import { getTicketByChannel, closeTicket, incrementTesterStats } from "../handlers/ticket";
+import { TIERS, Tier, Gamemode } from "../utils/constants";
+import { getTicketByChannel } from "../handlers/ticket";
 import { logCommand } from "../handlers/audit";
+import { buildCloseConfirmEmbed } from "../utils/embeds";
 
 export const closeCommand = {
   data: new SlashCommandBuilder()
@@ -60,17 +58,16 @@ export const closeCommand = {
       return;
     }
 
+    const { content, embed, row } = buildCloseConfirmEmbed(
+      ticket.gamemode as Gamemode,
+      tier
+    );
+
     await interaction.reply({
-      content: `✅ Closing ticket and assigning **${tier}** to <@${ticket.testeeId}>...`,
-    });
-
-    await incrementTesterStats(member.id);
-
-    await closeTicket({
-      client,
-      ticket,
-      tier,
-      closedBy: member.id,
+      content,
+      embeds: [embed],
+      components: [row],
+      ephemeral: true,
     });
 
     await logCommand(client, {
