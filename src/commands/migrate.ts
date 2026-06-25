@@ -29,12 +29,6 @@ export const migrateCommand = {
       o.setName("user").setDescription("Discord user being migrated").setRequired(true)
     )
     .addStringOption((o) =>
-      o.setName("region").setDescription("Player's region — leave blank to use registered profile").setRequired(false)
-    )
-    .addStringOption((o) =>
-      o.setName("minecraft_username").setDescription("Player's Minecraft username — leave blank to use registered profile").setRequired(false)
-    )
-    .addStringOption((o) =>
       o
         .setName("gamemode")
         .setDescription("Gamemode being migrated")
@@ -60,6 +54,12 @@ export const migrateCommand = {
         .setName("result")
         .setDescription("Discord message link of the result proof")
         .setRequired(true)
+    )
+    .addStringOption((o) =>
+      o.setName("region").setDescription("Player's region — leave blank to auto-fill from registered profile").setRequired(false)
+    )
+    .addStringOption((o) =>
+      o.setName("minecraft_username").setDescription("Player's Minecraft username — leave blank to auto-fill from registered profile").setRequired(false)
     ),
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
