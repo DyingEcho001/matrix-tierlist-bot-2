@@ -3,9 +3,10 @@ import {
   ChatInputCommandInteraction,
   Client,
   GuildMember,
+  TextChannel,
 } from "discord.js";
 import { db } from "../database";
-import { queues, queueTesters, queueMembers } from "../database/schema";
+import { queues, queueTesters, queueMembers, tickets } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import { GAMEMODE_KEYS, GAMEMODES, Gamemode } from "../utils/constants";
 import { isVoluntaryTester, hasStaffRole } from "../utils/permissions";
@@ -98,8 +99,27 @@ export const endCommand = {
       const closedQueue = { ...queue, isActive: false, lastSessionEnd: new Date() };
       await updateQueueEmbed(client, closedQueue as typeof queue);
 
+      const openTickets = await db
+        .select()
+        .from(tickets)
+        .where(
+          and(
+            eq(tickets.guildId, interaction.guildId!),
+            eq(tickets.gamemode, gamemode),
+            eq(tickets.region, region),
+            eq(tickets.status, "open")
+          )
+        );
+
+      let deletedTickets = 0;
+      for (const ticket of openTickets) {
+        const ch = (await client.channels.fetch(ticket.channelId).catch(() => null)) as TextChannel | null;
+        if (ch) { await ch.delete("Queue force-closed").catch(() => null); deletedTickets++; }
+        await db.update(tickets).set({ status: "closed", closedAt: new Date() }).where(eq(tickets.id, ticket.id));
+      }
+
       await interaction.editReply({
-        content: `✅ Force-closed the **${GAMEMODES[gamemode as Gamemode]}** (${region}) queue and removed ${activeTesters.length} tester(s). All members cleared.`,
+        content: `✅ Force-closed the **${GAMEMODES[gamemode as Gamemode]}** (${region}) queue and removed ${activeTesters.length} tester(s). All members cleared.${deletedTickets > 0 ? `\n🗑️ ${deletedTickets} active testing ticket(s) were also closed.` : ""}`,
       });
 
       await logCommand(client, {
@@ -140,8 +160,27 @@ export const endCommand = {
       const closedQueue = { ...queue, isActive: false, lastSessionEnd: new Date() };
       await updateQueueEmbed(client, closedQueue as typeof queue);
 
+      const openTickets = await db
+        .select()
+        .from(tickets)
+        .where(
+          and(
+            eq(tickets.guildId, interaction.guildId!),
+            eq(tickets.gamemode, gamemode),
+            eq(tickets.region, region),
+            eq(tickets.status, "open")
+          )
+        );
+
+      let deletedTickets = 0;
+      for (const ticket of openTickets) {
+        const ch = (await client.channels.fetch(ticket.channelId).catch(() => null)) as TextChannel | null;
+        if (ch) { await ch.delete("Queue closed").catch(() => null); deletedTickets++; }
+        await db.update(tickets).set({ status: "closed", closedAt: new Date() }).where(eq(tickets.id, ticket.id));
+      }
+
       await interaction.editReply({
-        content: `✅ Queue for **${GAMEMODES[gamemode as Gamemode]}** (${region}) has been closed. All members cleared.`,
+        content: `✅ Queue for **${GAMEMODES[gamemode as Gamemode]}** (${region}) has been closed. All members cleared.${deletedTickets > 0 ? `\n🗑️ ${deletedTickets} active testing ticket(s) were also closed.` : ""}`,
       });
     } else {
       await interaction.editReply({

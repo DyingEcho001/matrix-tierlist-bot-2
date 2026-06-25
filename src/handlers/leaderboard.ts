@@ -9,48 +9,45 @@ function getMonthName(): string {
   return new Date().toLocaleString("en-US", { month: "long" });
 }
 
-function buildLeaderboardEmbeds(
+function buildLeaderboardEmbed(
   allTimeRows: Array<{ discordId: string; allTimeTests: number | null }>,
   monthlyRows: Array<{ discordId: string; monthlyTests: number | null }>,
   totalMonthly: number,
   guildName: string
-): EmbedBuilder[] {
+): EmbedBuilder {
   const month = getMonthName();
 
   const allTimeLines =
     allTimeRows.length > 0
       ? allTimeRows.map(
-          (r, i) =>
-            `${i + 1}. <@${r.discordId}> — **${r.allTimeTests ?? 0}** tests`
+          (r, i) => `${i + 1}. <@${r.discordId}> — **${r.allTimeTests ?? 0}** tests`
         )
       : ["*No data yet.*"];
 
   const monthlyLines =
     monthlyRows.length > 0
       ? monthlyRows.map(
-          (r, i) =>
-            `${i + 1}. <@${r.discordId}> — **${r.monthlyTests ?? 0}** tests`
+          (r, i) => `${i + 1}. <@${r.discordId}> — **${r.monthlyTests ?? 0}** tests`
         )
       : ["*No data yet.*"];
 
-  const allTimeEmbed = new EmbedBuilder()
-    .setTitle("🏆 All Time Testing Leaderboard")
-    .setColor(0x6C3483)
-    .setDescription(allTimeLines.join("\n"));
-
-  const monthlyEmbed = new EmbedBuilder()
-    .setTitle(`🥇 ${month} Testing Leaderboard`)
+  return new EmbedBuilder()
+    .setTitle("📊 Testing Leaderboard")
     .setColor(0x6C3483)
     .setDescription(
       [
+        "🏆 **All Time Testing Leaderboard**",
+        "",
+        ...allTimeLines,
+        "",
+        `🥇 **${month} Testing Leaderboard**`,
+        "",
         ...monthlyLines,
         "",
         `**Total Tests in ${month} : ${totalMonthly}**`,
       ].join("\n")
     )
     .setFooter({ text: guildName });
-
-  return [allTimeEmbed, monthlyEmbed];
 }
 
 export async function postOrUpdateLeaderboard(
@@ -96,21 +93,21 @@ export async function postOrUpdateLeaderboard(
   const totalMonthly = Number(totalRow[0]?.total ?? 0);
   const guildName = client.guilds.cache.get(guildId)?.name ?? "Testing Leaderboard";
 
-  const embeds = buildLeaderboardEmbeds(allTimeRows, filteredMonthly, totalMonthly, guildName);
+  const embed = buildLeaderboardEmbed(allTimeRows, filteredMonthly, totalMonthly, guildName);
 
   const existing = leaderboardMessages.get(guildId);
 
   if (existing && existing.channelId === channelId) {
     try {
       const msg = await channel.messages.fetch(existing.messageId);
-      await msg.edit({ embeds });
+      await msg.edit({ embeds: [embed] });
       return;
     } catch {
       // Message was deleted — fall through to post new
     }
   }
 
-  const msg = await channel.send({ embeds });
+  const msg = await channel.send({ embeds: [embed] });
   leaderboardMessages.set(guildId, { channelId, messageId: msg.id });
 }
 

@@ -146,7 +146,7 @@ export async function updateQueueEmbed(
     const members = await getQueueMembers(queue.id);
     const testers = await getQueueTesters(queue.id);
 
-    const activeTests = await db
+    const rawActiveTests = await db
       .select({ testeeId: tickets.testeeId, testerId: tickets.testerId })
       .from(tickets)
       .where(
@@ -156,6 +156,13 @@ export async function updateQueueEmbed(
           eq(tickets.status, "open")
         )
       );
+
+    const seen = new Set<string>();
+    const activeTests = rawActiveTests.filter((t) => {
+      if (seen.has(t.testeeId)) return false;
+      seen.add(t.testeeId);
+      return true;
+    });
 
     if (!queue.isActive) {
       const closedEmbed = buildQueueClosedEmbed({

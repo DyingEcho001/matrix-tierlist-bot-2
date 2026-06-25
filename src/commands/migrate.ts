@@ -6,6 +6,9 @@ import {
   EmbedBuilder,
   TextChannel,
 } from "discord.js";
+import { db } from "../database";
+import { players } from "../database/schema";
+import { eq } from "drizzle-orm";
 import { requireStaff } from "../utils/permissions";
 import { getChannelId } from "../handlers/ticket";
 import { TIERS, GAMEMODES, GAMEMODE_KEYS, Gamemode, TIER_LABELS, Tier } from "../utils/constants";
@@ -26,10 +29,10 @@ export const migrateCommand = {
       o.setName("user").setDescription("Discord user being migrated").setRequired(true)
     )
     .addStringOption((o) =>
-      o.setName("region").setDescription("Player's region").setRequired(true)
+      o.setName("region").setDescription("Player's region — leave blank to use registered profile").setRequired(false)
     )
     .addStringOption((o) =>
-      o.setName("minecraft_username").setDescription("Player's Minecraft username").setRequired(true)
+      o.setName("minecraft_username").setDescription("Player's Minecraft username — leave blank to use registered profile").setRequired(false)
     )
     .addStringOption((o) =>
       o
@@ -64,14 +67,32 @@ export const migrateCommand = {
     if (!(await requireStaff(interaction, "regulator"))) return;
 
     const targetUser = interaction.options.getUser("user", true);
-    const region = interaction.options.getString("region", true);
-    const ign = interaction.options.getString("minecraft_username", true);
+    const regionInput = interaction.options.getString("region");
+    const ignInput = interaction.options.getString("minecraft_username");
     const gamemode = interaction.options.getString("gamemode", true) as Gamemode;
     const tier = interaction.options.getString("tier", true) as Tier;
     const source = interaction.options.getString("migrating_from", true);
     const resultLink = interaction.options.getString("result", true);
 
     await interaction.deferReply({ ephemeral: true });
+
+    const playerRow = await db
+      .select()
+      .from(players)
+      .where(eq(players.discordId, targetUser.id))
+      .limit(1);
+
+    const playerData = playerRow[0] ?? null;
+
+    const ign = ignInput ?? playerData?.ign ?? null;
+    const region = regionInput ?? playerData?.region ?? null;
+
+    if (!ign || !region) {
+      await interaction.editReply({
+        content: `❌ Could not determine ${!ign ? "Minecraft username" : "region"} for <@${targetUser.id}>. They have no registered profile — please provide the value manually.`,
+      });
+      return;
+    }
 
     const migrateChannelId = await getChannelId(interaction.guildId!, "migrate");
     if (!migrateChannelId) {
