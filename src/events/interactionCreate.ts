@@ -10,6 +10,7 @@ import {
   ModalSubmitInteraction,
   GuildMember,
   TextChannel,
+  EmbedBuilder,
 } from "discord.js";
 import { commands } from "../commands";
 import { db } from "../database";
@@ -23,7 +24,7 @@ import {
   categoryConfig,
   staffRoles as staffRolesTable,
 } from "../database/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { getOrCreateQueue, addToQueue, popFromQueueWithPriority } from "../handlers/queue";
 import { getTicketByChannel, closeTicket, incrementTesterStats, createTestingTicket } from "../handlers/ticket";
 import { GAMEMODES, GAMEMODE_KEYS, Gamemode, Tier } from "../utils/constants";
@@ -201,10 +202,13 @@ async function handleButtonInteraction(
     // If the user already has the role, allow them to remove it (leave waitlist)
     if (member.roles.cache.has(roleId)) {
       await member.roles.remove(roleId, "Left gamemode waitlist");
-      await interaction.reply({
-        content: `✅ You have been removed from the **${GAMEMODES[gamemode]}** (${playerRegion}) waitlist.`,
-        ephemeral: true,
-      });
+      const leaveEmbed = new EmbedBuilder()
+        .setTitle("👋 Left Waitlist")
+        .setColor(0x95a5a6)
+        .setDescription(`You have been removed from the **${GAMEMODES[gamemode]}** (${playerRegion}) waitlist.`)
+        .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+        .setTimestamp();
+      await interaction.reply({ embeds: [leaveEmbed], ephemeral: true });
       return;
     }
 
@@ -231,10 +235,13 @@ async function handleButtonInteraction(
     }
 
     await member.roles.add(roleId, "Joined gamemode waitlist");
-    await interaction.reply({
-      content: `✅ You now have the **${GAMEMODES[gamemode]}** (${playerRegion}) waitlist role. You'll be pinged when a tester is available!`,
-      ephemeral: true,
-    });
+    const joinEmbed = new EmbedBuilder()
+      .setTitle("✅ Waitlist Role Granted")
+      .setColor(0x6C3483)
+      .setDescription(`You now have the **${GAMEMODES[gamemode]}** (${playerRegion}) waitlist role.\nYou'll be pinged when a tester is available!`)
+      .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+      .setTimestamp();
+    await interaction.reply({ embeds: [joinEmbed], ephemeral: true });
     return;
   }
 
@@ -613,6 +620,24 @@ async function handleModalSubmit(
       return;
     }
 
+    const takenByOther = await db
+      .select()
+      .from(players)
+      .where(sql`LOWER(${players.ign}) = LOWER(${ign})`)
+      .limit(1);
+
+    if (takenByOther[0] && takenByOther[0].discordId !== interaction.user.id) {
+      const takenEmbed = new EmbedBuilder()
+        .setTitle("❌ IGN Already Taken")
+        .setColor(0xe74c3c)
+        .setDescription(`The IGN **${ign}** is already registered by <@${takenByOther[0].discordId}>.\n\nPlease use a different IGN or contact staff if you believe this is an error.`)
+        .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+        .setTimestamp();
+
+      await interaction.reply({ embeds: [takenEmbed], ephemeral: true });
+      return;
+    }
+
     await db
       .insert(players)
       .values({
@@ -633,16 +658,19 @@ async function handleModalSubmit(
         },
       });
 
-    await interaction.reply({
-      content: [
-        `✅ Profile registered/updated!`,
-        `**IGN:** ${ign}`,
-        `**Region:** ${normalizedRegion}`,
-        `**Preferred Server:** ${preferredServer}`,
-        "",
-        `You can now join a queue by clicking a gamemode button.`,
-      ].join("\n"),
-      ephemeral: true,
-    });
+    const registrationEmbed = new EmbedBuilder()
+      .setTitle("✅ Profile Registered!")
+      .setColor(0x6C3483)
+      .setThumbnail(`https://visage.surgeplay.com/bust/128/${ign}`)
+      .addFields(
+        { name: "IGN", value: ign, inline: true },
+        { name: "Region", value: normalizedRegion, inline: true },
+        { name: "Preferred Server", value: preferredServer, inline: true },
+      )
+      .setDescription("You can now join a queue by clicking a gamemode button.")
+      .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+      .setTimestamp();
+
+    await interaction.reply({ embeds: [registrationEmbed], ephemeral: true });
   }
 }
