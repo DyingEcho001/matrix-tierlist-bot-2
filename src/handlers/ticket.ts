@@ -336,10 +336,13 @@ export async function closeTicket(params: {
           .fetch(resultsChannelId)
           .catch(() => null)) as TextChannel | null;
         if (resultsChannel) {
-          await resultsChannel.send({
+          const resultMsg = await resultsChannel.send({
             content: `<@${ticket.testeeId}>`,
             embeds: [resultEmbed],
           });
+          for (const emoji of ["👑", "🤩", "😱", "😭", "😂", "💀", "🙂"]) {
+            await resultMsg.react(emoji).catch(() => null);
+          }
         }
       }
     }
@@ -404,7 +407,10 @@ export async function sendResultToChannel(params: {
       cooldownDays,
     });
 
-    await resultsChannel.send({ content: `<@${testeeId}>`, embeds: [resultEmbed] });
+    const resultMsg = await resultsChannel.send({ content: `<@${testeeId}>`, embeds: [resultEmbed] });
+    for (const emoji of ["👑", "🤩", "😱", "😭", "😂", "💀", "🙂"]) {
+      await resultMsg.react(emoji).catch(() => null);
+    }
   } catch (err) {
     console.error("Failed to send result to results channel:", err);
   }
