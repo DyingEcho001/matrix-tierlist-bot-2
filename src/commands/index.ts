@@ -54,6 +54,7 @@ import { rewardsCommand } from "./rewards";
 import { addInvitesCommand } from "./add-invites";
 import { migrateCommand } from "./migrate";
 import { updateLeaderboardCommand } from "./update-leaderboard";
+import { tierRemoveCommand } from "./tier-remove";
 
 const allCommands: Command[] = [
   startCommand,
@@ -102,6 +103,7 @@ const allCommands: Command[] = [
   addInvitesCommand,
   migrateCommand,
   updateLeaderboardCommand,
+  tierRemoveCommand,
 ];
 
 for (const cmd of allCommands) {
