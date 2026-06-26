@@ -103,8 +103,26 @@ export async function postOrUpdateLeaderboard(
       await msg.edit({ embeds: [embed] });
       return;
     } catch {
-      // Message was deleted — fall through to post new
+      // Message was deleted or unreachable — fall through to scan channel
     }
+  }
+
+  // Survive restarts: scan recent messages for an existing bot leaderboard embed
+  try {
+    const recent = await channel.messages.fetch({ limit: 20 });
+    const botLeaderboard = recent.find(
+      (m) =>
+        m.author.id === client.user!.id &&
+        m.embeds.length > 0 &&
+        m.embeds[0].title === "📊 Testing Leaderboard"
+    );
+    if (botLeaderboard) {
+      await botLeaderboard.edit({ embeds: [embed] });
+      leaderboardMessages.set(guildId, { channelId, messageId: botLeaderboard.id });
+      return;
+    }
+  } catch {
+    // Could not scan — fall through to post new
   }
 
   const msg = await channel.send({ embeds: [embed] });
