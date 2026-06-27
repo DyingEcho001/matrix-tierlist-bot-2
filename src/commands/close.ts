@@ -29,31 +29,30 @@ export const closeCommand = {
     ),
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
+    await interaction.deferReply({ ephemeral: true });
+
     const member = interaction.member as GuildMember;
     const tier = interaction.options.getString("tier", true) as Tier;
 
     const ticket = await getTicketByChannel(interaction.channelId);
 
     if (!ticket) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "❌ This command can only be used in an active testing ticket.",
-        ephemeral: true,
       });
       return;
     }
 
     if (ticket.testerId !== member.id) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "❌ Only the tester who opened this ticket can close it.",
-        ephemeral: true,
       });
       return;
     }
 
     if (ticket.isEvalPending) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "❌ This ticket has a pending HT3 evaluation. Use `/pass-eval` or `/fail-eval`.",
-        ephemeral: true,
       });
       return;
     }
@@ -63,11 +62,10 @@ export const closeCommand = {
       tier
     );
 
-    await interaction.reply({
+    await interaction.editReply({
       content,
       embeds: [embed],
       components: [row],
-      ephemeral: true,
     });
 
     await logCommand(client, {

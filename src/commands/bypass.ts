@@ -37,12 +37,13 @@ export const bypassCommand = {
     ),
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
+    await interaction.deferReply({ ephemeral: true });
+
     const member = interaction.member as GuildMember;
 
     if (!member.permissions.has(PermissionFlagsBits.Administrator)) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "❌ Only administrators can use this command.",
-        ephemeral: true,
       });
       return;
     }
@@ -51,9 +52,8 @@ export const bypassCommand = {
       (await hasCommandBypass(member.id, interaction.guildId!)) &&
       !member.permissions.has(PermissionFlagsBits.Administrator)
     ) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "❌ Bypass users cannot manage the bypass list.",
-        ephemeral: true,
       });
       return;
     }
@@ -69,9 +69,8 @@ export const bypassCommand = {
         .values({ guildId, discordId: target.id, addedBy: member.id })
         .onConflictDoNothing();
 
-      await interaction.reply({
+      await interaction.editReply({
         content: `✅ <@${target.id}> can now use all bot commands without required roles.`,
-        ephemeral: true,
       });
 
       await logCommand(client, {
@@ -93,9 +92,8 @@ export const bypassCommand = {
           )
         );
 
-      await interaction.reply({
+      await interaction.editReply({
         content: `✅ Bypass removed from <@${target.id}>.`,
-        ephemeral: true,
       });
 
       await logCommand(client, {
@@ -112,17 +110,15 @@ export const bypassCommand = {
         .where(eq(commandBypasses.guildId, guildId));
 
       if (rows.length === 0) {
-        await interaction.reply({
+        await interaction.editReply({
           content: "No users currently have bypass access.",
-          ephemeral: true,
         });
         return;
       }
 
       const list = rows.map((r) => `<@${r.discordId}>`).join("\n");
-      await interaction.reply({
+      await interaction.editReply({
         content: `**Bypass Users:**\n${list}`,
-        ephemeral: true,
       });
     }
   },

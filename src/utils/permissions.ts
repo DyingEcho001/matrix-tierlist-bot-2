@@ -78,10 +78,15 @@ export async function requireStaff(
   if (await hasCommandBypass(member.id, interaction.guildId!)) return true;
   const ok = await hasStaffRole(member, interaction.guildId!, required);
   if (!ok) {
-    await interaction.reply({
+    const payload = {
       content: "❌ You don't have the required permissions to use this command.",
       ephemeral: true,
-    });
+    };
+    if (interaction.deferred || interaction.replied) {
+      await interaction.followUp(payload);
+    } else {
+      await interaction.reply(payload);
+    }
   }
   return ok;
 }

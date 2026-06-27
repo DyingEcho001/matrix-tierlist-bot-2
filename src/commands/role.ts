@@ -37,6 +37,8 @@ export const roleCommand = {
     ),
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
+    await interaction.deferReply();
+
     const member = interaction.member as GuildMember;
     if (!(await requireStaff(interaction, "regulator"))) return;
 
@@ -49,9 +51,8 @@ export const roleCommand = {
       .catch(() => null);
 
     if (!targetMember) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "❌ Could not find that user in the server.",
-        ephemeral: true,
       });
       return;
     }
@@ -60,9 +61,8 @@ export const roleCommand = {
     const theirLevel = await getMemberStaffLevel(targetMember, interaction.guildId!);
 
     if (theirLevel >= myLevel && !member.permissions.has(8n)) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "❌ You cannot manage roles for users at or above your staff level.",
-        ephemeral: true,
       });
       return;
     }
@@ -80,7 +80,7 @@ export const roleCommand = {
       await targetMember.roles.remove(role.id, `Role removed by ${member.user.tag}`);
     }
 
-    await interaction.reply({ embeds: [embed], allowedMentions: { parse: [] } });
+    await interaction.editReply({ embeds: [embed], allowedMentions: { parse: [] } });
 
     await logCommand(client, {
       command: `role ${sub}`,

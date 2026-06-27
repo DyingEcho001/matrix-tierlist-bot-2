@@ -28,6 +28,8 @@ export const redeemCommand = {
     ),
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
+    await interaction.deferReply();
+
     const member = interaction.member as GuildMember;
     const guildId = interaction.guildId!;
 
@@ -43,18 +45,16 @@ export const redeemCommand = {
       .limit(1);
 
     if (redeemChannelRow[0] && interaction.channelId !== redeemChannelRow[0].channelId) {
-      await interaction.reply({
+      await interaction.editReply({
         content: `❌ This command can only be used in <#${redeemChannelRow[0].channelId}>.`,
-        ephemeral: true,
       });
       return;
     }
 
     const vtRoleId = await getVoluntaryTesterRoleId(guildId);
     if (!vtRoleId || !member.roles.cache.has(vtRoleId)) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "❌ Only Voluntary Testers can use this command.",
-        ephemeral: true,
       });
       return;
     }
@@ -63,7 +63,7 @@ export const redeemCommand = {
     const reward = REDEEM_REWARDS.find((r) => r.value === rewardKey);
 
     if (!reward) {
-      await interaction.reply({ content: "❌ Invalid reward.", ephemeral: true });
+      await interaction.editReply({ content: "❌ Invalid reward." });
       return;
     }
 
@@ -76,9 +76,8 @@ export const redeemCommand = {
     const currentTests = statsRow[0]?.allTimeTests ?? 0;
 
     if (currentTests < reward.cost) {
-      await interaction.reply({
+      await interaction.editReply({
         content: `❌ You need **${reward.cost}** all-time tests to redeem this reward. You currently have **${currentTests}**.`,
-        ephemeral: true,
       });
       return;
     }
@@ -111,7 +110,7 @@ export const redeemCommand = {
       ign,
     });
 
-    await interaction.reply({ embeds: [embed], ephemeral: false });
+    await interaction.editReply({ embeds: [embed] });
 
     await logCommand(client, {
       command: "redeem",

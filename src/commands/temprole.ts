@@ -58,22 +58,23 @@ export const temproleCommand = {
     ),
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
+    const isEphemeral = interaction.options.getBoolean("ephemeral") ?? false;
+    await interaction.deferReply({ ephemeral: isEphemeral });
+
     const member = interaction.member as GuildMember;
     if (!(await requireStaff(interaction, "senior_moderator"))) return;
 
     const sub = interaction.options.getSubcommand();
     const targetUser = interaction.options.getUser("user", true);
     const role = interaction.options.getRole("role", true);
-    const isEphemeral = interaction.options.getBoolean("ephemeral") ?? false;
 
     const targetMember = await interaction.guild!.members
       .fetch(targetUser.id)
       .catch(() => null);
 
     if (!targetMember) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "❌ Could not find that user in the server.",
-        ephemeral: true,
       });
       return;
     }
@@ -96,9 +97,8 @@ export const temproleCommand = {
     ]);
 
     if (protectedRoleIds.has(role.id)) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "❌ You cannot use `/temprole` to give or remove staff roles or tester roles.",
-        ephemeral: true,
       });
       return;
     }
@@ -107,9 +107,8 @@ export const temproleCommand = {
     const theirLevel = await getMemberStaffLevel(targetMember, guildId);
 
     if (theirLevel >= myLevel && !member.permissions.has(8n)) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "❌ You cannot manage roles for users at or above your staff level.",
-        ephemeral: true,
       });
       return;
     }
@@ -119,9 +118,8 @@ export const temproleCommand = {
       const ms = parseDuration(durationStr);
 
       if (!ms) {
-        await interaction.reply({
+        await interaction.editReply({
           content: "❌ Invalid duration format. Use formats like `30d`, `1h`, `24h`.",
-          ephemeral: true,
         });
         return;
       }
@@ -148,9 +146,8 @@ export const temproleCommand = {
         expiresAt,
       });
 
-      await interaction.reply({
+      await interaction.editReply({
         embeds: [embed],
-        ephemeral: isEphemeral,
         allowedMentions: { parse: [] },
       });
     } else {
@@ -173,9 +170,8 @@ export const temproleCommand = {
         moderatorId: member.id,
       });
 
-      await interaction.reply({
+      await interaction.editReply({
         embeds: [embed],
-        ephemeral: isEphemeral,
         allowedMentions: { parse: [] },
       });
     }

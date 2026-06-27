@@ -340,7 +340,7 @@ export async function closeTicket(params: {
             content: `<@${ticket.testeeId}>`,
             embeds: [resultEmbed],
           });
-          for (const emoji of ["👑", "🤩", "😱", "😭", "😂", "💀", "🙂"]) {
+          for (const emoji of ["🏆", "🎉", "🔥", "👍🏻", "💀"]) {
             await resultMsg.react(emoji).catch(() => null);
           }
         }
@@ -408,7 +408,7 @@ export async function sendResultToChannel(params: {
     });
 
     const resultMsg = await resultsChannel.send({ content: `<@${testeeId}>`, embeds: [resultEmbed] });
-    for (const emoji of ["👑", "🤩", "😱", "😭", "😂", "💀", "🙂"]) {
+    for (const emoji of ["🏆", "🎉", "🔥", "👍🏻", "💀"]) {
       await resultMsg.react(emoji).catch(() => null);
     }
   } catch (err) {

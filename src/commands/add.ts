@@ -23,14 +23,15 @@ export const addCommand = {
     ),
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
+    await interaction.deferReply();
+
     const member = interaction.member as GuildMember;
     if (!(await requireStaff(interaction, "helper"))) return;
 
     const ticket = await getTicketByChannel(interaction.channelId);
     if (!ticket) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "❌ This command can only be used inside a bot-generated testing ticket.",
-        ephemeral: true,
       });
       return;
     }
@@ -41,9 +42,8 @@ export const addCommand = {
       .catch(() => null);
 
     if (!targetMember) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "❌ Could not find that user in the server.",
-        ephemeral: true,
       });
       return;
     }
@@ -55,7 +55,7 @@ export const addCommand = {
       ReadMessageHistory: true,
     });
 
-    await interaction.reply({
+    await interaction.editReply({
       content: `✅ <@${targetUser.id}> has been added to this ticket.`,
     });
 
