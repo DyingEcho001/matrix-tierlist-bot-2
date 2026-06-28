@@ -53,7 +53,7 @@ function makeButtonEmoji(gm: Gamemode): { id: string; name: string } | { name: s
   return undefined;
 }
 
-export function buildRegistrationPanelRows(): ActionRowBuilder<ButtonBuilder>[] {
+export function buildRegistrationPanelRows(skipGamemodeEmoji = false): ActionRowBuilder<ButtonBuilder>[] {
   const gamemodeKeys = Object.keys(GAMEMODES) as Gamemode[];
   const rows: ActionRowBuilder<ButtonBuilder>[] = [];
 
@@ -74,8 +74,10 @@ export function buildRegistrationPanelRows(): ActionRowBuilder<ButtonBuilder>[] 
           .setCustomId(`join_gamemode_${gm}`)
           .setLabel(GAMEMODES[gm])
           .setStyle(ButtonStyle.Secondary);
-        const emoji = makeButtonEmoji(gm);
-        if (emoji) btn.setEmoji(emoji);
+        if (!skipGamemodeEmoji) {
+          const emoji = makeButtonEmoji(gm);
+          if (emoji) btn.setEmoji(emoji);
+        }
         return btn;
       })
     );
