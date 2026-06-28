@@ -44,12 +44,20 @@ export const registrationPanelSendCommand = {
 
     try {
       const embed = buildRegistrationPanelEmbed();
-      const rows = buildRegistrationPanelRows();
 
-      await targetChannel.send({
-        embeds: [embed],
-        components: rows,
-      });
+      // Try with gamemode emoji first; fall back to no emoji if any ID is invalid
+      let rows = buildRegistrationPanelRows(false);
+      try {
+        await targetChannel.send({ embeds: [embed], components: rows });
+      } catch (emojiErr: any) {
+        const msg: string = emojiErr?.message ?? String(emojiErr);
+        if (msg.includes("emoji") || msg.includes("COMPONENT_INVALID_EMOJI") || emojiErr?.code === 50035) {
+          rows = buildRegistrationPanelRows(true);
+          await targetChannel.send({ embeds: [embed], components: rows });
+        } else {
+          throw emojiErr;
+        }
+      }
     } catch (err) {
       await interaction.editReply({
         content: `❌ Failed to send the panel: ${err instanceof Error ? err.message : String(err)}`,
