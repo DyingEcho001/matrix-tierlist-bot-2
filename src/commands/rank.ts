@@ -33,12 +33,6 @@ export const rankCommand = {
         .setRequired(true)
         .addChoices(...TIERS.map((t) => ({ name: t, value: t })))
     )
-    .addUserOption((o) =>
-      o
-        .setName("user")
-        .setDescription("Discord user to rank")
-        .setRequired(true)
-    )
     .addStringOption((o) =>
       o
         .setName("gamemode")
@@ -47,6 +41,18 @@ export const rankCommand = {
         .addChoices(
           ...GAMEMODE_KEYS.map((gm) => ({ name: GAMEMODES[gm], value: gm }))
         )
+    )
+    .addUserOption((o) =>
+      o
+        .setName("user")
+        .setDescription("Discord user to rank")
+        .setRequired(false)
+    )
+    .addStringOption((o) =>
+      o
+        .setName("discord-id")
+        .setDescription("Discord user ID to rank (alternative to @user)")
+        .setRequired(false)
     ),
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
@@ -54,12 +60,37 @@ export const rankCommand = {
     if (!(await requireStaff(interaction, "regulator"))) return;
 
     const tier = interaction.options.getString("tier", true) as Tier;
-    const targetUser = interaction.options.getUser("user", true);
     const gamemode = interaction.options.getString("gamemode", true) as Gamemode;
+    const targetUser = interaction.options.getUser("user");
+    const rawDiscordId = interaction.options.getString("discord-id");
 
     await interaction.deferReply({ ephemeral: true });
 
-    if (targetUser.id === member.id) {
+    if (!targetUser && !rawDiscordId) {
+      await interaction.editReply({
+        content: "❌ Please provide a user (@mention) or a Discord ID.",
+      });
+      return;
+    }
+
+    const targetId = targetUser?.id ?? rawDiscordId!;
+
+    const registrationRow = await db
+      .select()
+      .from(players)
+      .where(eq(players.discordId, targetId))
+      .limit(1);
+
+    if (!registrationRow[0]) {
+      await interaction.editReply({
+        content: `❌ <@${targetId}> is not registered. They must register a profile before being ranked.`,
+      });
+      return;
+    }
+
+    const playerData = registrationRow[0];
+
+    if (targetId === member.id) {
       const bypassRow = await db
         .select()
         .from(commandBypasses)
@@ -86,14 +117,14 @@ export const rankCommand = {
     const prevTierRow = await db
       .select()
       .from(tiers)
-      .where(and(eq(tiers.discordId, targetUser.id), eq(tiers.gamemode, gamemode)))
+      .where(and(eq(tiers.discordId, targetId), eq(tiers.gamemode, gamemode)))
       .limit(1);
     const previousTier = prevTierRow[0]?.tier ?? null;
 
     await db
       .insert(tiers)
       .values({
-        discordId: targetUser.id,
+        discordId: targetId,
         gamemode,
         tier,
         givenBy: member.id,
@@ -106,22 +137,16 @@ export const rankCommand = {
     const expiresAt = new Date(Date.now() + cooldownMs);
     await db
       .insert(cooldowns)
-      .values({ discordId: targetUser.id, gamemode, expiresAt })
+      .values({ discordId: targetId, gamemode, expiresAt })
       .onConflictDoUpdate({
         target: [cooldowns.discordId, cooldowns.gamemode],
         set: { expiresAt, createdAt: new Date() },
       });
 
-    const playerData = await db
-      .select()
-      .from(players)
-      .where(eq(players.discordId, targetUser.id))
-      .limit(1);
-
     await applyTierRole({
       client,
       guildId: interaction.guildId!,
-      discordId: targetUser.id,
+      discordId: targetId,
       gamemode,
       tier,
     });
@@ -131,18 +156,18 @@ export const rankCommand = {
     await sendResultToChannel({
       client,
       guildId: interaction.guildId!,
-      testeeId: targetUser.id,
+      testeeId: targetId,
       testerId: member.id,
       gamemode,
       tier,
       cooldownDays,
-      ign: playerData[0]?.ign,
-      region: playerData[0]?.region,
+      ign: playerData.ign,
+      region: playerData.region,
       previousTier,
     });
 
     await interaction.editReply({
-      content: `✅ Ranked <@${targetUser.id}> as **${tier}** in **${GAMEMODES[gamemode]}**. Result posted to the results channel.`,
+      content: `✅ Ranked <@${targetId}> as **${tier}** in **${GAMEMODES[gamemode]}**. Result posted to the results channel.`,
     });
 
     await logCommand(client, {
@@ -150,7 +175,7 @@ export const rankCommand = {
       user: member,
       guildId: interaction.guildId!,
       channelId: interaction.channelId,
-      options: { tier, user: targetUser.id, gamemode },
+      options: { tier, user: targetId, gamemode },
     });
   },
 };
