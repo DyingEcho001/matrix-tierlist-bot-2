@@ -7,7 +7,7 @@ import {
 import { db } from "../database";
 import { tierRoles } from "../database/schema";
 import { TIERS, GAMEMODE_KEYS, GAMEMODES, Tier, Gamemode } from "../utils/constants";
-import { requireStaff } from "../utils/permissions";
+import { requireSuperAdmin } from "../utils/permissions";
 import { logCommand } from "../handlers/audit";
 
 export const tierRoleAssignCommand = {
@@ -40,7 +40,7 @@ export const tierRoleAssignCommand = {
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
     const member = interaction.member as GuildMember;
-    if (!(await requireStaff(interaction, "manager"))) return;
+    if (!(await requireSuperAdmin(interaction))) return;
 
     const tier = interaction.options.getString("tier", true) as Tier;
     const gamemode = interaction.options.getString("gamemode", true) as Gamemode;
