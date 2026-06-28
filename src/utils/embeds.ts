@@ -286,12 +286,12 @@ export function buildPlayerDataEmbed(params: {
   } | null;
   queriedBy?: string;
 }): EmbedBuilder {
-  const { player, tiers: playerTiers, cooldowns, testerStats, restriction, queriedBy } = params;
+  const { player, tiers: playerTiers, cooldowns, testerStats, restriction } = params;
 
   const tierText =
     playerTiers.length > 0
       ? playerTiers
-          .map((t) => `**${GAMEMODES[t.gamemode as Gamemode] ?? t.gamemode}:** ${TIER_LABELS[t.tier as Tier] ?? t.tier}`)
+          .map((t) => `${GAMEMODES[t.gamemode as Gamemode] ?? t.gamemode}: ${TIER_LABELS[t.tier as Tier] ?? t.tier}`)
           .join("\n")
       : "*No tiers*";
 
@@ -300,31 +300,29 @@ export function buildPlayerDataEmbed(params: {
       ? cooldowns
           .map(
             (c) =>
-              `**${GAMEMODES[c.gamemode as Gamemode] ?? c.gamemode}:** <t:${Math.floor(c.expiresAt.getTime() / 1000)}:R>`
+              `${GAMEMODES[c.gamemode as Gamemode] ?? c.gamemode}: <t:${Math.floor(c.expiresAt.getTime() / 1000)}:R>`
           )
           .join("\n")
       : "*None*";
 
+  const profileLines = [
+    `**IGN:** ${player.ign}`,
+    `**Region:** ${player.region}`,
+    `**Account:** ${player.isPremium === false ? "Cracked" : "Premium"}`,
+  ];
+  if (player.uuid) profileLines.push(`**UUID:** ${player.uuid}`);
+
   const embed = new EmbedBuilder()
     .setTitle(`Player Data: ${player.ign}`)
-    .setColor(EMBED_COLORS.red_border)
+    .setColor(0xed4245)
+    .setDescription(
+      `<@${player.discordId}> | ${player.region} | ${player.discordUsername} |\n${player.discordId}`
+    )
     .setThumbnail(`https://visage.surgeplay.com/bust/128/${player.ign}`)
     .addFields(
       {
-        name: "\u200B",
-        value: `<@${player.discordId}> | ${player.region} | ${player.discordUsername}\n${player.discordId}`,
-        inline: false,
-      },
-      {
         name: "Profile",
-        value: [
-          `**IGN:** ${player.ign}`,
-          `**Region:** ${player.region}`,
-          `**Account:** ${player.isPremium === false ? "Cracked" : "Premium"}`,
-          player.uuid ? `**UUID:** ${player.uuid}` : "",
-        ]
-          .filter(Boolean)
-          .join("\n"),
+        value: profileLines.join("\n"),
         inline: false,
       }
     );
@@ -349,33 +347,33 @@ export function buildPlayerDataEmbed(params: {
       ? `<t:${Math.floor(restriction.expiresAt.getTime() / 1000)}:R>`
       : "Unknown";
 
+    const typeName = restriction.type
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+
     const restrictionLines = [
       `**Restricted:** <t:${Math.floor(restriction.createdAt.getTime() / 1000)}:f>`,
       `**Expires:** ${expiresText}`,
-      `**Shame Role:** ${restriction.type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}`,
+      `**Reason:** ${restriction.reason && restriction.reason !== "manual" ? restriction.reason : "manual"}`,
+      `**Shame Role:** ${typeName}`,
     ];
-    if (restriction.reason && restriction.reason !== "manual") {
-      restrictionLines.push(`**Reason:** ${restriction.reason}`);
-    }
     embed.addFields({
-      name: "⛔ Active Restriction",
+      name: "Active Restriction",
       value: restrictionLines.join("\n"),
       inline: false,
     });
   }
 
-  if (queriedBy) {
-    embed.setFooter({
-      text: `Queried at ${new Date().toLocaleString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      })}`,
-    });
-  }
+  embed.setFooter({
+    text: `Queried at ${new Date().toLocaleString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })}`,
+  });
 
   return embed;
 }
