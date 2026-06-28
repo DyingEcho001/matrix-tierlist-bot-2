@@ -11,6 +11,7 @@ export const GAMEMODES = {
   uhc: "UHC",
   vanilla: "Vanilla",
   spearmace: "SpearMace",
+  ogvanilla: "OGVanilla",
 } as const;
 
 export type Gamemode = keyof typeof GAMEMODES;
@@ -29,6 +30,7 @@ export const GAMEMODE_EMOJIS: Record<Gamemode, string> = {
   uhc:        "<:UHC:1516067484179103856>",
   vanilla:    "<:VANILLA:1516067734926917813>",
   spearmace:  "<:spear:1516071546446151680>",
+  ogvanilla:  "<:OGV:1520508829693907124>",
 };
 
 export const GAMEMODE_BUTTON_EMOJIS: Record<Gamemode, { id?: string; name: string } | string> = {
@@ -44,6 +46,7 @@ export const GAMEMODE_BUTTON_EMOJIS: Record<Gamemode, { id?: string; name: strin
   uhc:        { id: "1516067484179103856", name: "UHC" },
   vanilla:    { id: "1516067734926917813", name: "VANILLA" },
   spearmace:  { id: "1516071546446151680", name: "spear" },
+  ogvanilla:  { id: "1520508829693907124", name: "OGV" },
 };
 
 export const REGIONS = {
