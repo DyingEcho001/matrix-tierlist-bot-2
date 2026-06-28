@@ -6,7 +6,7 @@ import {
 } from "discord.js";
 import { db } from "../database";
 import { channelConfig } from "../database/schema";
-import { requireStaff } from "../utils/permissions";
+import { requireSuperAdmin } from "../utils/permissions";
 import { logCommand } from "../handlers/audit";
 
 export const setChannelCommand = {
@@ -38,7 +38,7 @@ export const setChannelCommand = {
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
     const member = interaction.member as GuildMember;
-    if (!(await requireStaff(interaction, "manager"))) return;
+    if (!(await requireSuperAdmin(interaction))) return;
 
     const type = interaction.options.getString("type", true);
     const channel = interaction.options.getChannel("channel", true);
