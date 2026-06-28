@@ -168,10 +168,14 @@ async function handleButtonInteraction(
       .limit(1);
 
     if (!playerData[0]) {
-      await interaction.reply({
-        content: `❌ You need to register your profile first before joining a waitlist. Click **Register / Update Profile**.`,
-        ephemeral: true,
-      });
+      const notRegisteredEmbed = new EmbedBuilder()
+        .setColor(0xed4245)
+        .setTitle("❌ Profile Required")
+        .setDescription(
+          "You need to register your profile before joining any waitlist.\n\nClick **Register / Update Profile** in this panel to set up your IGN, region, and account type."
+        )
+        .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" });
+      await interaction.reply({ embeds: [notRegisteredEmbed], ephemeral: true });
       return;
     }
 
