@@ -3,19 +3,19 @@ import {
   ChatInputCommandInteraction,
   Client,
   GuildMember,
-  PermissionFlagsBits,
 } from "discord.js";
 import { db } from "../database";
 import { commandBypasses } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import { logCommand } from "../handlers/audit";
-import { hasCommandBypass } from "../utils/permissions";
+
+const BYPASS_OWNER_ID = "1327527060234702871";
 
 export const bypassCommand = {
   data: new SlashCommandBuilder()
     .setName("bypass")
-    .setDescription("Allow a user to use all bot commands without required roles (Admin only)")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .setDescription("Allow a user to use all bot commands without required roles")
+    .setDefaultMemberPermissions(null)
     .addSubcommand((sub) =>
       sub
         .setName("add")
@@ -41,19 +41,9 @@ export const bypassCommand = {
 
     const member = interaction.member as GuildMember;
 
-    if (!member.permissions.has(PermissionFlagsBits.Administrator)) {
+    if (member.id !== BYPASS_OWNER_ID) {
       await interaction.editReply({
-        content: "❌ Only administrators can use this command.",
-      });
-      return;
-    }
-
-    if (
-      (await hasCommandBypass(member.id, interaction.guildId!)) &&
-      !member.permissions.has(PermissionFlagsBits.Administrator)
-    ) {
-      await interaction.editReply({
-        content: "❌ Bypass users cannot manage the bypass list.",
+        content: "❌ You don't have permission to use this command.",
       });
       return;
     }
