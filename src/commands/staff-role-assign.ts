@@ -8,7 +8,7 @@ import { db } from "../database";
 import { staffRoles } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import { STAFF_ROLES, STAFF_ROLE_LABELS, StaffRole } from "../utils/constants";
-import { requireStaff } from "../utils/permissions";
+import { requireSuperAdmin } from "../utils/permissions";
 import { logCommand } from "../handlers/audit";
 
 export const staffRoleCommand = {
@@ -37,7 +37,7 @@ export const staffRoleCommand = {
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
     const member = interaction.member as GuildMember;
-    if (!(await requireStaff(interaction, "manager"))) return;
+    if (!(await requireSuperAdmin(interaction))) return;
 
     const staffRole = interaction.options.getString("staff-role", true) as StaffRole;
     const role = interaction.options.getRole("role", true);
