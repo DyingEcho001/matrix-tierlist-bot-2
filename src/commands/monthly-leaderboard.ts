@@ -8,7 +8,6 @@ import {
 import { db } from "../database";
 import { testerStats } from "../database/schema";
 import { desc } from "drizzle-orm";
-import { EMBED_COLORS } from "../utils/constants";
 import { logCommand } from "../handlers/audit";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
@@ -21,7 +20,7 @@ const MONTH_NAMES = [
 export const monthlyLeaderboardCommand = {
   data: new SlashCommandBuilder()
     .setName("monthly-leaderboard")
-    .setDescription("View the monthly tester roster/leaderboard")
+    .setDescription("View the monthly tester leaderboard")
     .setDefaultMemberPermissions(null),
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
@@ -53,24 +52,26 @@ export const monthlyLeaderboardCommand = {
         let name: string;
         try {
           const user = await client.users.fetch(row.discordId);
-          name = user.username;
+          name = `@${user.username}`;
         } catch {
           name = `<@${row.discordId}>`;
         }
-        return `${medal} **${name}** — ${row.monthlyTests ?? 0} tests`;
+        return `${medal} ${name} — **${row.monthlyTests ?? 0}** tests`;
       })
     );
 
+    const totalTests = activeRows.reduce((acc, r) => acc + (r.monthlyTests ?? 0), 0);
+
     const embed = new EmbedBuilder()
-      .setTitle(`📅 Monthly Tester Roster — ${monthLabel}`)
+      .setTitle(`📅 ${monthLabel} Testing Leaderboard`)
       .setDescription(lines.join("\n"))
       .setColor(0x5865f2)
       .addFields({
-        name: "Active Testers This Month",
-        value: `${activeRows.length} tester${activeRows.length !== 1 ? "s" : ""}`,
-        inline: true,
+        name: `Total Tests in ${monthLabel}`,
+        value: `${totalTests}`,
+        inline: false,
       })
-      .setFooter({ text: `Resets at the start of each month` })
+      .setFooter({ text: "Matrix Tierlist • Resets at the start of each month" })
       .setTimestamp();
 
     await interaction.editReply({ embeds: [embed] });
