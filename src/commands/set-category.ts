@@ -7,7 +7,7 @@ import {
 } from "discord.js";
 import { db } from "../database";
 import { categoryConfig } from "../database/schema";
-import { requireStaff } from "../utils/permissions";
+import { requireSuperAdmin } from "../utils/permissions";
 import { logCommand } from "../handlers/audit";
 
 export const setCategoryCommand = {
@@ -34,7 +34,7 @@ export const setCategoryCommand = {
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
     const member = interaction.member as GuildMember;
-    if (!(await requireStaff(interaction, "manager"))) return;
+    if (!(await requireSuperAdmin(interaction))) return;
 
     const type = interaction.options.getString("type", true);
     const category = interaction.options.getChannel("category", true);
