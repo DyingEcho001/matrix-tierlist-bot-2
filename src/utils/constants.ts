@@ -22,14 +22,14 @@ export const GAMEMODE_EMOJIS: Record<Gamemode, string> = {
   potion:     "<:Potion:1515671878029803530>",
   mace:       "<:MACE:1515434532499619942>",
   axe_shield: "<:AXE:1516066987615457372>",
-  smp:        "<:SMP:1463043580892287057>",
+  smp:        "<:SMP:1516066537977679872>",
   diamond_smp:"<:DIA_SMP:1515671730457153616>",
   cart_pvp:   "<:TNT_CART:1515671953040474122>",
   creeper:    "<:creeper:1516064576116887552>",
   sword:      "<:SWORD:1516066339284975827>",
   uhc:        "<:UHC:1516067484179103856>",
   vanilla:    "<:VANILLA:1516067734926917813>",
-  spearmace:  "<:spear:1516071546446151680>",
+  spearmace:  "<:spear:1520131818798448671>",
   ogvanilla:  "<:OGV:1520508829693907124>",
 };
 
@@ -38,14 +38,14 @@ export const GAMEMODE_BUTTON_EMOJIS: Record<Gamemode, { id?: string; name: strin
   potion:     { id: "1515671878029803530", name: "Potion" },
   mace:       { id: "1515434532499619942", name: "MACE" },
   axe_shield: { id: "1516066987615457372", name: "AXE" },
-  smp:        { id: "1463043580892287057", name: "SMP" },
+  smp:        { id: "1516066537977679872", name: "SMP" },
   diamond_smp:{ id: "1515671730457153616", name: "DIA_SMP" },
   cart_pvp:   { id: "1515671953040474122", name: "TNT_CART" },
   creeper:    { id: "1516064576116887552", name: "creeper" },
   sword:      { id: "1516066339284975827", name: "SWORD" },
   uhc:        { id: "1516067484179103856", name: "UHC" },
   vanilla:    { id: "1516067734926917813", name: "VANILLA" },
-  spearmace:  { id: "1516071546446151680", name: "spear" },
+  spearmace:  { id: "1520131818798448671", name: "spear" },
   ogvanilla:  { id: "1520508829693907124", name: "OGV" },
 };
 
