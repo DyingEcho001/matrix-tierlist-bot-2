@@ -25,6 +25,8 @@ export const registrationPanelSendCommand = {
     ),
 
   async execute(interaction: ChatInputCommandInteraction, client: Client) {
+    await interaction.deferReply({ ephemeral: true });
+
     const member = interaction.member as GuildMember;
     if (!(await requireStaff(interaction, "manager"))) return;
 
@@ -34,24 +36,29 @@ export const registrationPanelSendCommand = {
       .catch(() => null)) as TextChannel | null;
 
     if (!targetChannel || !targetChannel.isTextBased()) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "❌ Invalid channel.",
-        ephemeral: true,
       });
       return;
     }
 
-    const embed = buildRegistrationPanelEmbed();
-    const rows = buildRegistrationPanelRows();
+    try {
+      const embed = buildRegistrationPanelEmbed();
+      const rows = buildRegistrationPanelRows();
 
-    await targetChannel.send({
-      embeds: [embed],
-      components: rows,
-    });
+      await targetChannel.send({
+        embeds: [embed],
+        components: rows,
+      });
+    } catch (err) {
+      await interaction.editReply({
+        content: `❌ Failed to send the panel: ${err instanceof Error ? err.message : String(err)}`,
+      });
+      return;
+    }
 
-    await interaction.reply({
+    await interaction.editReply({
       content: `✅ Registration panel sent to <#${channel.id}>.`,
-      ephemeral: true,
     });
 
     await logCommand(client, {
