@@ -126,6 +126,8 @@ export const rankCommand = {
       tier,
     });
 
+    await incrementTesterStats(member.id);
+
     await sendResultToChannel({
       client,
       guildId: interaction.guildId!,
