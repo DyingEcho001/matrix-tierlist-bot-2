@@ -1,13 +1,12 @@
 import {
   GuildMember,
-  Guild,
   PermissionFlagsBits,
   ChatInputCommandInteraction,
 } from "discord.js";
 import { db } from "../database";
 import { staffRoles, commandBypasses } from "../database/schema";
 import { eq, and } from "drizzle-orm";
-import { StaffRole, STAFF_ROLE_HIERARCHY, STAFF_ROLES } from "./constants";
+import { StaffRole, STAFF_ROLE_HIERARCHY, STAFF_ROLES, SUPER_ADMIN_ID } from "./constants";
 
 export async function getStaffRoleId(
   guildId: string,
@@ -55,6 +54,10 @@ export function isAdmin(member: GuildMember): boolean {
   return member.permissions.has(PermissionFlagsBits.Administrator);
 }
 
+export function isSuperAdmin(member: GuildMember): boolean {
+  return member.id === SUPER_ADMIN_ID;
+}
+
 export async function hasCommandBypass(
   discordId: string,
   guildId: string
@@ -69,26 +72,42 @@ export async function hasCommandBypass(
   return row.length > 0;
 }
 
+async function replyOrEdit(
+  interaction: ChatInputCommandInteraction,
+  content: string
+): Promise<void> {
+  const payload = { content, ephemeral: true };
+  if (interaction.deferred) {
+    await interaction.editReply(payload);
+  } else if (interaction.replied) {
+    await interaction.followUp(payload);
+  } else {
+    await interaction.reply(payload);
+  }
+}
+
 export async function requireStaff(
   interaction: ChatInputCommandInteraction,
   required: StaffRole
 ): Promise<boolean> {
   const member = interaction.member as GuildMember;
+  if (isSuperAdmin(member)) return true;
   if (isAdmin(member) || isOwner(member)) return true;
   if (await hasCommandBypass(member.id, interaction.guildId!)) return true;
   const ok = await hasStaffRole(member, interaction.guildId!, required);
   if (!ok) {
-    const payload = {
-      content: "❌ You don't have the required permissions to use this command.",
-      ephemeral: true,
-    };
-    if (interaction.deferred || interaction.replied) {
-      await interaction.followUp(payload);
-    } else {
-      await interaction.reply(payload);
-    }
+    await replyOrEdit(interaction, "❌ You don't have the required permissions to use this command.");
   }
   return ok;
+}
+
+export async function requireSuperAdmin(
+  interaction: ChatInputCommandInteraction
+): Promise<boolean> {
+  const member = interaction.member as GuildMember;
+  if (isSuperAdmin(member)) return true;
+  await replyOrEdit(interaction, "❌ This command is restricted and cannot be used.");
+  return false;
 }
 
 export async function getVoluntaryTesterRoleId(
@@ -123,9 +142,9 @@ export async function isVoluntaryTester(
   guildId: string,
   gamemode?: string
 ): Promise<boolean> {
+  if (isSuperAdmin(member)) return true;
   if (isAdmin(member) || isOwner(member)) return true;
   if (await hasCommandBypass(member.id, guildId)) return true;
-  // Regulators and above have full access to all tester commands
   if (await hasStaffRole(member, guildId, "regulator")) return true;
   const vtRoleId = await getVoluntaryTesterRoleId(guildId);
   if (!vtRoleId || !member.roles.cache.has(vtRoleId)) return false;
