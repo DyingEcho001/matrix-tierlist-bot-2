@@ -5,7 +5,7 @@ import {
   GuildMember,
   TextChannel,
 } from "discord.js";
-import { requireStaff } from "../utils/permissions";
+import { requireSuperAdmin } from "../utils/permissions";
 import {
   buildRegistrationPanelEmbed,
   buildRegistrationPanelRows,
@@ -28,7 +28,7 @@ export const registrationPanelSendCommand = {
     await interaction.deferReply({ ephemeral: true });
 
     const member = interaction.member as GuildMember;
-    if (!(await requireStaff(interaction, "manager"))) return;
+    if (!(await requireSuperAdmin(interaction))) return;
 
     const channel = interaction.options.getChannel("channel", true);
     const targetChannel = (await client.channels
