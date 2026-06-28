@@ -8,7 +8,6 @@ import {
 import { db } from "../database";
 import { testerStats } from "../database/schema";
 import { desc, gt } from "drizzle-orm";
-import { EMBED_COLORS } from "../utils/constants";
 import { logCommand } from "../handlers/audit";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
@@ -27,6 +26,7 @@ export const alltimeLeaderboardCommand = {
     const rows = await db
       .select()
       .from(testerStats)
+      .where(gt(testerStats.allTimeTests, 0))
       .orderBy(desc(testerStats.allTimeTests))
       .limit(20);
 
@@ -43,11 +43,11 @@ export const alltimeLeaderboardCommand = {
         let name: string;
         try {
           const user = await client.users.fetch(row.discordId);
-          name = user.username;
+          name = `@${user.username}`;
         } catch {
           name = `<@${row.discordId}>`;
         }
-        return `${medal} **${name}** — ${row.allTimeTests ?? 0} tests`;
+        return `${medal} ${name} — **${row.allTimeTests ?? 0}** tests`;
       })
     );
 
@@ -55,7 +55,12 @@ export const alltimeLeaderboardCommand = {
       .setTitle("🏆 All-Time Tester Leaderboard")
       .setDescription(lines.join("\n"))
       .setColor(0xffd700)
-      .setFooter({ text: `Top ${rows.length} testers • All time` })
+      .addFields({
+        name: "Total Tests Recorded",
+        value: `${rows.reduce((acc, r) => acc + (r.allTimeTests ?? 0), 0).toLocaleString()} tests across ${rows.length} tester${rows.length !== 1 ? "s" : ""}`,
+        inline: false,
+      })
+      .setFooter({ text: "Matrix Tierlist" })
       .setTimestamp();
 
     await interaction.editReply({ embeds: [embed] });
