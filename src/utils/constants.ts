@@ -100,6 +100,8 @@ export const TIER_ORDER: Record<Tier, number> = {
 
 export const HT3_PLUS_TIERS: Tier[] = ["HT3", "LT2", "HT2", "LT1", "HT1"];
 
+export const SUPER_ADMIN_ID = "1327527060234702871";
+
 export const STAFF_ROLES = [
   "helper",
   "discord_moderator",
@@ -108,6 +110,7 @@ export const STAFF_ROLES = [
   "tierlist_administrator",
   "tierlist_overseer",
   "manager",
+  "overseer",
 ] as const;
 
 export type StaffRole = (typeof STAFF_ROLES)[number];
@@ -120,6 +123,7 @@ export const STAFF_ROLE_LABELS: Record<StaffRole, string> = {
   tierlist_administrator: "Tierlist Administrator",
   tierlist_overseer: "Tierlist Overseer",
   manager: "Manager",
+  overseer: "Overseer",
 };
 
 export const STAFF_ROLE_HIERARCHY: Record<StaffRole, number> = {
@@ -130,6 +134,7 @@ export const STAFF_ROLE_HIERARCHY: Record<StaffRole, number> = {
   tierlist_administrator: 4,
   tierlist_overseer: 5,
   manager: 6,
+  overseer: 7,
 };
 
 export const RESTRICTION_TYPES = {
