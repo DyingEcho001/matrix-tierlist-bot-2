@@ -6,15 +6,23 @@ import {
   EmbedBuilder,
 } from "discord.js";
 import { db } from "../database";
-import { testerStats, players, tiers } from "../database/schema";
+import { testerStats, players } from "../database/schema";
 import { eq } from "drizzle-orm";
-import { GAMEMODES, TIER_LABELS, EMBED_COLORS, Gamemode, Tier } from "../utils/constants";
+import { EMBED_COLORS } from "../utils/constants";
 import { logCommand } from "../handlers/audit";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
+
+function formatTime(date: Date): string {
+  return date.toLocaleString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
 
 export const statsCommand = {
   data: new SlashCommandBuilder()
@@ -58,44 +66,24 @@ export const statsCommand = {
     const embed = new EmbedBuilder()
       .setAuthor({
         name: `${ign}'s Tester Stats`,
-        iconURL: targetUser.displayAvatarURL({ size: 128 }),
       })
-      .setThumbnail(`https://visage.surgeplay.com/bust/128/${ign}`)
+      .setThumbnail(targetUser.displayAvatarURL({ size: 256 }))
       .setColor(0xffd700)
       .addFields(
         {
-          name: "👤 Discord",
-          value: `<@${targetUser.id}>`,
-          inline: true,
-        },
-        {
-          name: "🌍 Region",
-          value: region,
-          inline: true,
-        },
-        {
-          name: "\u200B",
-          value: "\u200B",
-          inline: true,
-        },
-        {
           name: "🏆 All-Time Tests",
-          value: `**${allTimeTests}**`,
-          inline: true,
+          value: `\`\`\`${allTimeTests}\`\`\``,
+          inline: false,
         },
         {
-          name: `📅 ${monthLabel}`,
-          value: `**${monthlyTests}**`,
-          inline: true,
-        },
-        {
-          name: "\u200B",
-          value: "\u200B",
-          inline: true,
+          name: `📅 Tests This Month (${monthLabel})`,
+          value: `\`\`\`${monthlyTests}\`\`\``,
+          inline: false,
         }
       )
-      .setTimestamp()
-      .setFooter({ text: `Stats for ${ign}` });
+      .setFooter({
+        text: `User ID: ${targetUser.id} | Today at ${formatTime(now)}`,
+      });
 
     await interaction.editReply({ embeds: [embed] });
 
