@@ -58,6 +58,7 @@ import { tierRemoveCommand } from "./tier-remove";
 import { unregisterCommand } from "./unregister";
 import { removeTestsCommand } from "./remove-tests";
 import { monthlyTestResetCommand } from "./monthly-testreset";
+import { registration2PanelSendCommand } from "./registration2-panel-send";
 
 const allCommands: Command[] = [
   startCommand,
@@ -110,6 +111,7 @@ const allCommands: Command[] = [
   unregisterCommand,
   removeTestsCommand,
   monthlyTestResetCommand,
+  registration2PanelSendCommand,
 ];
 
 for (const cmd of allCommands) {
