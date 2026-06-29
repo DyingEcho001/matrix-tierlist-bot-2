@@ -30,7 +30,7 @@ function makeButtonEmoji(
 
 function buildPanel2Embed(): EmbedBuilder {
   return new EmbedBuilder()
-    .setColor(0x5865f2)
+    .setColor(0xfee75c)
     .setTitle("⚡ Matrix Tierlist — Player Evaluation")
     .setDescription(
       "Get evaluated by our certified testers. Follow the steps below to join the queue."
@@ -39,7 +39,7 @@ function buildPanel2Embed(): EmbedBuilder {
       {
         name: "📋  Step 1 — Register Your Profile",
         value:
-          "Set your **IGN**, **region**, and **account type** using the green button below.\n> This is required before you can join any gamemode waitlist.",
+          "Set your **IGN**, **region**, and **account type** using the button below.\n> This is required before you can join any gamemode waitlist.",
         inline: false,
       },
       {
@@ -58,7 +58,7 @@ function buildPanel2Embed(): EmbedBuilder {
         name: "ℹ️  Rules & Cooldowns",
         value: [
           "⏱ **Cooldown:** 5 days per test · 15 days for HT3+",
-          "📌 **HT3 and above?** Open a high-tier ticket instead of joining the queue",
+          "📌 **LT2 and above?** Open a high-tier ticket instead of joining the queue",
           "✅ **Validity:** Only authentic account and gameplay info is accepted",
         ].join("\n"),
         inline: false,
@@ -76,20 +76,19 @@ function buildPanel2Rows(skipEmoji = false): ActionRowBuilder<ButtonBuilder>[] {
   const registerBtn = new ButtonBuilder()
     .setCustomId("register_profile")
     .setLabel("Register / Update Profile")
-    .setStyle(ButtonStyle.Success)
+    .setStyle(ButtonStyle.Primary)
     .setEmoji({ id: "1475200135108628523", name: "BOOK_QUILL" });
 
   rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(registerBtn));
 
-  const gamemodeKeys = GAMEMODE_KEYS;
-  for (let i = 0; i < gamemodeKeys.length; i += 5) {
-    const chunk = gamemodeKeys.slice(i, i + 5);
+  for (let i = 0; i < GAMEMODE_KEYS.length; i += 4) {
+    const chunk = GAMEMODE_KEYS.slice(i, i + 4);
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
       ...chunk.map((gm) => {
         const btn = new ButtonBuilder()
           .setCustomId(`join_gamemode_${gm}`)
           .setLabel(GAMEMODES[gm])
-          .setStyle(ButtonStyle.Primary);
+          .setStyle(ButtonStyle.Secondary);
         if (!skipEmoji) {
           const emoji = makeButtonEmoji(gm);
           if (emoji) btn.setEmoji(emoji);
