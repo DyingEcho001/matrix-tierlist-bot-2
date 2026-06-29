@@ -56,6 +56,8 @@ import { migrateCommand } from "./migrate";
 import { updateLeaderboardCommand } from "./update-leaderboard";
 import { tierRemoveCommand } from "./tier-remove";
 import { unregisterCommand } from "./unregister";
+import { removeTestsCommand } from "./remove-tests";
+import { monthlyTestResetCommand } from "./monthly-testreset";
 
 const allCommands: Command[] = [
   startCommand,
@@ -106,6 +108,8 @@ const allCommands: Command[] = [
   updateLeaderboardCommand,
   tierRemoveCommand,
   unregisterCommand,
+  removeTestsCommand,
+  monthlyTestResetCommand,
 ];
 
 for (const cmd of allCommands) {
