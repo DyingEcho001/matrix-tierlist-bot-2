@@ -19,27 +19,27 @@ import {
 
 export function buildRegistrationPanelEmbed(): EmbedBuilder {
   return new EmbedBuilder()
-    .setTitle("📝 Evaluation Testing Waitlist")
+    .setTitle("Evaluation Testing <:Tester:1512790870775300227>")
     .setDescription(
       [
-        "Upon applying, you will be added to a waitlist channel.",
-        "Here you will be pinged when a tester of your region is available.",
-        "If you are HT3 or higher, create a high ticket",
+        "**Upon Applying** <:book_new:1521223277228458165>",
+        "After applying, you will be added to a waitlist channel. You will be pinged when a tester from your region becomes available.",
+        "HT3+ players: Please create a High Ticket instead of using the waitlist.",
         "",
-        "**Register Your Profile** 📖",
+        "**Register Your Profile** <:High_management:1520435985094017045>",
         "Click Register / Update Profile to set your in-game username, region, and account type before joining any queue.",
         "",
-        "**Select a Gamemode** 📜",
-        "Click any gamemode button below to receive the corresponding waitlist role. A tester will pick you up when they open a queue.",
+        "**Select a Gamemode** <:WIND_CHARGE:1520134019277394092>",
+        "Click a gamemode button below to receive the corresponding waitlist role. A tester will contact you when a queue opens for that gamemode.",
         "",
-        "**Testing Cooldown** ⏳",
-        "Each Gamemode has a 5-day cooldown after each test",
+        "**Testing Cooldown** <:clock:1521221469156409435>",
+        "All gamemodes have a 5-day cooldown after each completed test.",
         "",
-        "**Validity** 👤",
-        "Provide authentic information about your account and testing details",
+        "**Validity** <:STAFF_TEAM:1520419201263861780>",
+        "All information provided must be accurate and authentic. False or misleading information will result in your test being denied.",
       ].join("\n")
     )
-    .setColor(EMBED_COLORS.primary);
+    .setColor(0xfee75c);
 }
 
 function makeButtonEmoji(gm: Gamemode): { id: string; name: string } | { name: string } | undefined {
@@ -60,7 +60,7 @@ export function buildRegistrationPanelRows(skipGamemodeEmoji = false): ActionRow
   const registerBtn = new ButtonBuilder()
     .setCustomId("register_profile")
     .setLabel("Register / Update Profile")
-    .setStyle(ButtonStyle.Danger)
+    .setStyle(ButtonStyle.Primary)
     .setEmoji({ id: "1475200135108628523", name: "BOOK_QUILL" });
 
   const registerRow = new ActionRowBuilder<ButtonBuilder>().addComponents(registerBtn);
