@@ -28,24 +28,14 @@ function makeButtonEmoji(
 function buildPanel2Rows(skipEmoji = false): ActionRowBuilder<ButtonBuilder>[] {
   const rows: ActionRowBuilder<ButtonBuilder>[] = [];
 
-  // Row 1: 4 disabled spacer buttons to push the register button to the right
+  // Row 1: Register button alone so it appears prominent at the top
   const registerBtn = new ButtonBuilder()
     .setCustomId("register_profile")
     .setLabel("Register / Update Profile")
     .setStyle(ButtonStyle.Primary)
     .setEmoji({ id: "1475200135108628523", name: "BOOK_QUILL" });
 
-  const spacers = [1, 2, 3, 4].map((n) =>
-    new ButtonBuilder()
-      .setCustomId(`panel2_spacer_${n}`)
-      .setLabel("\u200b")
-      .setStyle(ButtonStyle.Secondary)
-      .setDisabled(true)
-  );
-
-  rows.push(
-    new ActionRowBuilder<ButtonBuilder>().addComponents(...spacers, registerBtn)
-  );
+  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(registerBtn));
 
   // Remaining rows: gamemode buttons (5 per row) — these are the waitlist role buttons
   for (let i = 0; i < GAMEMODE_KEYS.length; i += 5) {
