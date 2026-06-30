@@ -7,6 +7,7 @@ import {
   TextInputStyle,
   ActionRowBuilder,
   ButtonInteraction,
+  StringSelectMenuInteraction,
   ModalSubmitInteraction,
   GuildMember,
   TextChannel,
@@ -79,6 +80,22 @@ export function registerInteractionEvent(client: Client): void {
           await btn.followUp(msg).catch(() => null);
         } else {
           await btn.reply(msg).catch(() => null);
+        }
+      }
+      return;
+    }
+
+    if (interaction.isStringSelectMenu()) {
+      try {
+        await handleSelectMenuInteraction(interaction as StringSelectMenuInteraction, client);
+      } catch (err) {
+        console.error(`Error handling select menu ${(interaction as StringSelectMenuInteraction).customId}:`, err);
+        const sel = interaction as StringSelectMenuInteraction;
+        const msg = { content: "❌ Something went wrong. Please try again.", ephemeral: true };
+        if (sel.replied || sel.deferred) {
+          await sel.followUp(msg).catch(() => null);
+        } else {
+          await sel.reply(msg).catch(() => null);
         }
       }
       return;
@@ -581,6 +598,112 @@ async function handleCloseConfirm(
     tier,
     closedBy: member.id,
   });
+}
+
+async function handleSelectMenuInteraction(
+  interaction: StringSelectMenuInteraction,
+  client: Client
+): Promise<void> {
+  if (interaction.customId !== "select_gamemode_waitlist") return;
+
+  if (isRateLimited(interaction.user.id, "join_gamemode")) {
+    await interaction.reply({ content: "❌ Please wait a moment before doing that again.", ephemeral: true });
+    return;
+  }
+
+  const rawGamemode = interaction.values[0];
+  if (!GAMEMODE_KEYS.includes(rawGamemode as Gamemode)) {
+    await interaction.reply({ content: "❌ Invalid gamemode.", ephemeral: true });
+    return;
+  }
+  const gamemode = rawGamemode as Gamemode;
+  const member = interaction.member as GuildMember;
+
+  const playerData = await db
+    .select()
+    .from(players)
+    .where(eq(players.discordId, member.id))
+    .limit(1);
+
+  if (!playerData[0]) {
+    const notRegisteredEmbed = new EmbedBuilder()
+      .setColor(0xed4245)
+      .setTitle("❌ Profile Required")
+      .setDescription(
+        "You need to register your profile before joining any waitlist.\n\nClick **Register / Update Profile** in this panel to set up your IGN, region, and account type."
+      )
+      .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" });
+    await interaction.reply({ embeds: [notRegisteredEmbed], ephemeral: true });
+    return;
+  }
+
+  const playerRegion = playerData[0].region;
+
+  const gamemodeRoleRow = await db
+    .select()
+    .from(gamemodeRoles)
+    .where(
+      and(
+        eq(gamemodeRoles.guildId, interaction.guildId!),
+        eq(gamemodeRoles.gamemode, gamemode),
+        eq(gamemodeRoles.region, playerRegion)
+      )
+    )
+    .limit(1);
+
+  if (!gamemodeRoleRow[0]) {
+    await interaction.reply({
+      content: `❌ No waitlist role configured for **${GAMEMODES[gamemode] ?? gamemode}** (${playerRegion}) yet. Ask an admin to set one up with \`/waitlist-role-set\`.`,
+      ephemeral: true,
+    });
+    return;
+  }
+
+  const roleId = gamemodeRoleRow[0].roleId;
+
+  // If the user already has the role, remove it (leave waitlist)
+  if (member.roles.cache.has(roleId)) {
+    await member.roles.remove(roleId, "Left gamemode waitlist");
+    const leaveEmbed = new EmbedBuilder()
+      .setTitle("👋 Left Waitlist")
+      .setColor(0x95a5a6)
+      .setDescription(`You have been removed from the **${GAMEMODES[gamemode]}** (${playerRegion}) waitlist.`)
+      .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+      .setTimestamp();
+    await interaction.reply({ embeds: [leaveEmbed], ephemeral: true });
+    return;
+  }
+
+  // Check for active cooldown
+  const now = new Date();
+  const activeCooldown = await db
+    .select()
+    .from(cooldowns)
+    .where(
+      and(
+        eq(cooldowns.discordId, member.id),
+        eq(cooldowns.gamemode, gamemode)
+      )
+    )
+    .limit(1);
+
+  if (activeCooldown[0] && activeCooldown[0].expiresAt > now) {
+    const expiryUnix = Math.floor(activeCooldown[0].expiresAt.getTime() / 1000);
+    await interaction.reply({
+      content: `⏳ You are on a cooldown for **${GAMEMODES[gamemode]}**.\nYou can rejoin the waitlist <t:${expiryUnix}:R> — on <t:${expiryUnix}:D>.`,
+      ephemeral: true,
+    });
+    return;
+  }
+
+  await member.roles.add(roleId, "Joined gamemode waitlist");
+  const joinEmbed = new EmbedBuilder()
+    .setTitle("✅ Waitlist Role Granted")
+    .setColor(0x6C3483)
+    .setDescription(`You now have the **${GAMEMODES[gamemode]}** (${playerRegion}) waitlist role.\nYou'll be pinged when a tester is available!`)
+    .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+    .setTimestamp();
+  await interaction.reply({ embeds: [joinEmbed], ephemeral: true });
 }
 
 async function handleModalSubmit(

@@ -4,59 +4,71 @@ import {
   Client,
   GuildMember,
   TextChannel,
+  EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
 } from "discord.js";
 import { requireSuperAdmin } from "../utils/permissions";
-import { buildRegistrationPanelEmbed } from "../utils/embeds";
 import { logCommand } from "../handlers/audit";
-import { GAMEMODES, GAMEMODE_BUTTON_EMOJIS, Gamemode } from "../utils/constants";
+import { GAMEMODES, GAMEMODE_KEYS, Gamemode } from "../utils/constants";
 
-const GAMEMODE_KEYS = Object.keys(GAMEMODES) as Gamemode[];
-
-function makeButtonEmoji(
-  gm: Gamemode
-): { id: string; name: string } | { name: string } | undefined {
-  const e = GAMEMODE_BUTTON_EMOJIS[gm];
-  if (typeof e === "string") return { name: e };
-  if (e && typeof e === "object" && "id" in e && e.id)
-    return { id: e.id, name: e.name };
-  return undefined;
+function buildPanel2Embed(): EmbedBuilder {
+  return new EmbedBuilder()
+    .setColor(0xfee75c)
+    .setTitle("📋  Evaluation Testing Waitlist & Roles")
+    .addFields(
+      {
+        name: "Step 1: Register Your Profile",
+        value: "Click the `Register / Update Profile` button to set your in-game details.",
+        inline: false,
+      },
+      {
+        name: "Step 2: Get a Waitlist Role",
+        value: [
+          "After registering, select any gamemode below to get the corresponding waitlist role. Each role has a **5-day cooldown**.",
+          "",
+          "**• Region:** The server region you wish to test on (NA, EU, AS/AU).",
+          "**• Username:** The name of the account you will be testing on.",
+        ].join("\n"),
+        inline: false,
+      },
+      {
+        name: "\u200b",
+        value: "🏆  **Failure to provide authentic information will result in a denied test.**",
+        inline: false,
+      }
+    )
+    .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" });
 }
 
-function buildPanel2Rows(skipEmoji = false): ActionRowBuilder<ButtonBuilder>[] {
-  const rows: ActionRowBuilder<ButtonBuilder>[] = [];
+function buildPanel2Components(): ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] {
+  // Row 1: Green register button
+  const registerRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId("register_profile")
+      .setLabel("Register / Update Profile")
+      .setStyle(ButtonStyle.Success)
+      .setEmoji({ id: "1475200135108628523", name: "BOOK_QUILL" })
+  );
 
-  // Row 1: Register button alone so it appears prominent at the top
-  const registerBtn = new ButtonBuilder()
-    .setCustomId("register_profile")
-    .setLabel("Register / Update Profile")
-    .setStyle(ButtonStyle.Primary)
-    .setEmoji({ id: "1475200135108628523", name: "BOOK_QUILL" });
+  // Row 2: Select menu for gamemodes
+  const options = GAMEMODE_KEYS.map((gm: Gamemode) =>
+    new StringSelectMenuOptionBuilder()
+      .setValue(gm)
+      .setLabel(GAMEMODES[gm])
+  );
 
-  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(registerBtn));
+  const selectRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+    new StringSelectMenuBuilder()
+      .setCustomId("select_gamemode_waitlist")
+      .setPlaceholder("Select a gamemode to get the waitlist role")
+      .addOptions(options)
+  );
 
-  // Remaining rows: gamemode buttons (5 per row) — these are the waitlist role buttons
-  for (let i = 0; i < GAMEMODE_KEYS.length; i += 5) {
-    const chunk = GAMEMODE_KEYS.slice(i, i + 5);
-    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-      ...chunk.map((gm) => {
-        const btn = new ButtonBuilder()
-          .setCustomId(`join_gamemode_${gm}`)
-          .setLabel(GAMEMODES[gm])
-          .setStyle(ButtonStyle.Secondary);
-        if (!skipEmoji) {
-          const emoji = makeButtonEmoji(gm);
-          if (emoji) btn.setEmoji(emoji);
-        }
-        return btn;
-      })
-    );
-    rows.push(row);
-  }
-
-  return rows;
+  return [registerRow, selectRow];
 }
 
 export const registration2PanelSendCommand = {
@@ -88,24 +100,9 @@ export const registration2PanelSendCommand = {
     }
 
     try {
-      // Use the original registration panel embed, with the new button layout
-      const embed = buildRegistrationPanelEmbed();
-      let rows = buildPanel2Rows(false);
-      try {
-        await targetChannel.send({ embeds: [embed], components: rows });
-      } catch (emojiErr: any) {
-        const msg: string = emojiErr?.message ?? String(emojiErr);
-        if (
-          msg.includes("emoji") ||
-          msg.includes("COMPONENT_INVALID_EMOJI") ||
-          emojiErr?.code === 50035
-        ) {
-          rows = buildPanel2Rows(true);
-          await targetChannel.send({ embeds: [embed], components: rows });
-        } else {
-          throw emojiErr;
-        }
-      }
+      const embed = buildPanel2Embed();
+      const components = buildPanel2Components();
+      await targetChannel.send({ embeds: [embed], components });
     } catch (err) {
       await interaction.editReply({
         content: `❌ Failed to send the panel: ${err instanceof Error ? err.message : String(err)}`,
