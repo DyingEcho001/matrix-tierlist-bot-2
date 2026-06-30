@@ -4,7 +4,6 @@ import {
   Client,
   GuildMember,
   TextChannel,
-  EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
@@ -12,37 +11,9 @@ import {
   StringSelectMenuOptionBuilder,
 } from "discord.js";
 import { requireSuperAdmin } from "../utils/permissions";
+import { buildRegistrationPanelEmbed } from "../utils/embeds";
 import { logCommand } from "../handlers/audit";
 import { GAMEMODES, GAMEMODE_KEYS, Gamemode } from "../utils/constants";
-
-function buildPanel2Embed(): EmbedBuilder {
-  return new EmbedBuilder()
-    .setColor(0xfee75c)
-    .setTitle("📋  Evaluation Testing Waitlist & Roles")
-    .addFields(
-      {
-        name: "Step 1: Register Your Profile",
-        value: "Click the `Register / Update Profile` button to set your in-game details.",
-        inline: false,
-      },
-      {
-        name: "Step 2: Get a Waitlist Role",
-        value: [
-          "After registering, select any gamemode below to get the corresponding waitlist role. Each role has a **5-day cooldown**.",
-          "",
-          "**• Region:** The server region you wish to test on (NA, EU, AS/AU).",
-          "**• Username:** The name of the account you will be testing on.",
-        ].join("\n"),
-        inline: false,
-      },
-      {
-        name: "\u200b",
-        value: "🏆  **Failure to provide authentic information will result in a denied test.**",
-        inline: false,
-      }
-    )
-    .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" });
-}
 
 function buildPanel2Components(): ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] {
   // Row 1: Green register button
@@ -100,7 +71,7 @@ export const registration2PanelSendCommand = {
     }
 
     try {
-      const embed = buildPanel2Embed();
+      const embed = buildRegistrationPanelEmbed();
       const components = buildPanel2Components();
       await targetChannel.send({ embeds: [embed], components });
     } catch (err) {
