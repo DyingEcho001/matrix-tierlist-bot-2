@@ -4,19 +4,16 @@ import {
   Client,
   GuildMember,
   TextChannel,
-  EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
 } from "discord.js";
 import { requireSuperAdmin } from "../utils/permissions";
+import { buildRegistrationPanelEmbed } from "../utils/embeds";
 import { logCommand } from "../handlers/audit";
-import {
-  GAMEMODES,
-  GAMEMODE_KEYS,
-  GAMEMODE_BUTTON_EMOJIS,
-  Gamemode,
-} from "../utils/constants";
+import { GAMEMODES, GAMEMODE_BUTTON_EMOJIS, Gamemode } from "../utils/constants";
+
+const GAMEMODE_KEYS = Object.keys(GAMEMODES) as Gamemode[];
 
 function makeButtonEmoji(
   gm: Gamemode
@@ -28,61 +25,31 @@ function makeButtonEmoji(
   return undefined;
 }
 
-function buildPanel2Embed(): EmbedBuilder {
-  return new EmbedBuilder()
-    .setColor(0xfee75c)
-    .setTitle("⚡ Matrix Tierlist — Player Evaluation")
-    .setDescription(
-      "Get evaluated by our certified testers. Follow the steps below to join the queue."
-    )
-    .addFields(
-      {
-        name: "📋  Step 1 — Register Your Profile",
-        value:
-          "Set your **IGN**, **region**, and **account type** using the button below.\n> This is required before you can join any gamemode waitlist.",
-        inline: false,
-      },
-      {
-        name: "🎮  Step 2 — Join a Waitlist",
-        value:
-          "Tap any gamemode button to receive the matching waitlist role.\n> You'll be pinged automatically when a tester opens a session in your region.",
-        inline: false,
-      },
-      {
-        name: "🏆  Step 3 — Attend Your Test",
-        value:
-          "Join the session when called by your tester.\n> Results are posted to the results channel after your evaluation.",
-        inline: false,
-      },
-      {
-        name: "ℹ️  Rules & Cooldowns",
-        value: [
-          "⏱ **Cooldown:** 5 days per test · 15 days for HT3+",
-          "📌 **LT2 and above?** Open a high-tier ticket instead of joining the queue",
-          "✅ **Validity:** Only authentic account and gameplay info is accepted",
-        ].join("\n"),
-        inline: false,
-      }
-    )
-    .setFooter({
-      text: "Matrix Tierlist | Dev — DyingEcho  •  Use the buttons below to get started",
-    })
-    .setTimestamp();
-}
-
 function buildPanel2Rows(skipEmoji = false): ActionRowBuilder<ButtonBuilder>[] {
   const rows: ActionRowBuilder<ButtonBuilder>[] = [];
 
+  // Row 1: 4 disabled spacer buttons to push the register button to the right
   const registerBtn = new ButtonBuilder()
     .setCustomId("register_profile")
     .setLabel("Register / Update Profile")
     .setStyle(ButtonStyle.Primary)
     .setEmoji({ id: "1475200135108628523", name: "BOOK_QUILL" });
 
-  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(registerBtn));
+  const spacers = [1, 2, 3, 4].map((n) =>
+    new ButtonBuilder()
+      .setCustomId(`panel2_spacer_${n}`)
+      .setLabel("\u200b")
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(true)
+  );
 
-  for (let i = 0; i < GAMEMODE_KEYS.length; i += 4) {
-    const chunk = GAMEMODE_KEYS.slice(i, i + 4);
+  rows.push(
+    new ActionRowBuilder<ButtonBuilder>().addComponents(...spacers, registerBtn)
+  );
+
+  // Remaining rows: gamemode buttons (5 per row) — these are the waitlist role buttons
+  for (let i = 0; i < GAMEMODE_KEYS.length; i += 5) {
+    const chunk = GAMEMODE_KEYS.slice(i, i + 5);
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
       ...chunk.map((gm) => {
         const btn = new ButtonBuilder()
@@ -105,7 +72,7 @@ function buildPanel2Rows(skipEmoji = false): ActionRowBuilder<ButtonBuilder>[] {
 export const registration2PanelSendCommand = {
   data: new SlashCommandBuilder()
     .setName("registration2-panel-send")
-    .setDescription("Send the alternate registration panel to a channel (Super Admin only)")
+    .setDescription("Send the registration panel (v2 layout) to a channel (Super Admin only)")
     .setDefaultMemberPermissions(null)
     .addChannelOption((o) =>
       o
@@ -131,7 +98,8 @@ export const registration2PanelSendCommand = {
     }
 
     try {
-      const embed = buildPanel2Embed();
+      // Use the original registration panel embed, with the new button layout
+      const embed = buildRegistrationPanelEmbed();
       let rows = buildPanel2Rows(false);
       try {
         await targetChannel.send({ embeds: [embed], components: rows });
@@ -156,7 +124,7 @@ export const registration2PanelSendCommand = {
     }
 
     await interaction.editReply({
-      content: `✅ Alternate registration panel sent to <#${channel.id}>.`,
+      content: `✅ Registration panel (v2) sent to <#${channel.id}>.`,
     });
 
     await logCommand(client, {
