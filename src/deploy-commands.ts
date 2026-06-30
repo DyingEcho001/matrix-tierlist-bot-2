@@ -12,18 +12,17 @@ export async function deployCommands(): Promise<void> {
 
   console.log(`🚀 Deploying ${commandData.length} commands to guild ${config.guildId}...`);
 
-  try {
-    await rest.put(
-      Routes.applicationGuildCommands(config.clientId, config.guildId),
-      { body: commandData }
-    );
-    console.log("✅ Commands deployed successfully!");
-  } catch (err) {
-    console.error("❌ Failed to deploy commands:", err);
-  }
+  await rest.put(
+    Routes.applicationGuildCommands(config.clientId, config.guildId),
+    { body: commandData }
+  );
+  console.log("✅ Commands deployed successfully!");
 }
 
 // Allow running directly: ts-node src/deploy-commands.ts
 if (require.main === module) {
-  deployCommands();
+  deployCommands().catch((err) => {
+    console.error("❌ Failed to deploy commands:", err);
+    process.exit(1);
+  });
 }
