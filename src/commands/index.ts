@@ -59,6 +59,7 @@ import { unregisterCommand } from "./unregister";
 import { removeTestsCommand } from "./remove-tests";
 import { monthlyTestResetCommand } from "./monthly-testreset";
 import { registration2PanelSendCommand } from "./registration2-panel-send";
+import { refreshQueueEmbedsCommand } from "./refresh-queue-embeds";
 
 const allCommands: Command[] = [
   startCommand,
@@ -112,6 +113,7 @@ const allCommands: Command[] = [
   removeTestsCommand,
   monthlyTestResetCommand,
   registration2PanelSendCommand,
+  refreshQueueEmbedsCommand,
 ];
 
 for (const cmd of allCommands) {
