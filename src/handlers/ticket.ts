@@ -229,6 +229,14 @@ export async function closeTicket(params: {
   const cooldownMs = isHT3Plus ? COOLDOWNS.ht3 : COOLDOWNS.normal;
   const cooldownDays = isHT3Plus ? 15 : 5;
 
+  // Read previous tier BEFORE the upsert overwrites it
+  const previousTierBeforeClose = await db
+    .select()
+    .from(tiers)
+    .where(and(eq(tiers.discordId, ticket.testeeId), eq(tiers.gamemode, ticket.gamemode)))
+    .limit(1);
+  const previousTierValue = previousTierBeforeClose[0]?.tier ?? null;
+
   await db
     .insert(tiers)
     .values({ discordId: ticket.testeeId, gamemode: ticket.gamemode, tier, givenBy: closedBy })
@@ -306,15 +314,9 @@ export async function closeTicket(params: {
         .where(eq(players.discordId, ticket.testeeId))
         .limit(1);
 
-      const prevTierRow = await db
-        .select()
-        .from(tiers)
-        .where(and(eq(tiers.discordId, ticket.testeeId), eq(tiers.gamemode, ticket.gamemode)))
-        .limit(1);
-
       const ign = playerData[0]?.ign ?? testeeUser.username;
       const region = playerData[0]?.region ?? ticket.region;
-      const previousTier = prevTierRow[0]?.tier ?? null;
+      const previousTier = previousTierValue;
 
       const resultEmbed = buildTestResultEmbed({
         testeeId: ticket.testeeId,
