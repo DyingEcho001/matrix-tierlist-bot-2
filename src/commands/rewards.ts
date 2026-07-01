@@ -126,7 +126,7 @@ export const rewardsCommand = {
         ].join("\n")
       )
       .setColor(0x57F287)
-      .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+      .setFooter({ text: "Matrix Tierlist" })
       .setTimestamp();
 
     await interaction.editReply({ embeds: [embed] });

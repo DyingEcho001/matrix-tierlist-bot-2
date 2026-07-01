@@ -191,7 +191,7 @@ async function handleButtonInteraction(
         .setDescription(
           "You need to register your profile before joining any waitlist.\n\nClick **Register / Update Profile** in this panel to set up your IGN, region, and account type."
         )
-        .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" });
+        .setFooter({ text: "Matrix Tierlist" });
       await interaction.reply({ embeds: [notRegisteredEmbed], ephemeral: true });
       return;
     }
@@ -227,7 +227,7 @@ async function handleButtonInteraction(
         .setTitle("👋 Left Waitlist")
         .setColor(0x95a5a6)
         .setDescription(`You have been removed from the **${GAMEMODES[gamemode]}** (${playerRegion}) waitlist.`)
-        .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+        .setFooter({ text: "Matrix Tierlist" })
         .setTimestamp();
       await interaction.reply({ embeds: [leaveEmbed], ephemeral: true });
       return;
@@ -260,7 +260,7 @@ async function handleButtonInteraction(
       .setTitle("✅ Waitlist Role Granted")
       .setColor(0x6C3483)
       .setDescription(`You now have the **${GAMEMODES[gamemode]}** (${playerRegion}) waitlist role.\nYou'll be pinged when a tester is available!`)
-      .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+      .setFooter({ text: "Matrix Tierlist" })
       .setTimestamp();
     await interaction.reply({ embeds: [joinEmbed], ephemeral: true });
     return;
@@ -632,7 +632,7 @@ async function handleSelectMenuInteraction(
       .setDescription(
         "You need to register your profile before joining any waitlist.\n\nClick **Register / Update Profile** in this panel to set up your IGN, region, and account type."
       )
-      .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" });
+      .setFooter({ text: "Matrix Tierlist" });
     await interaction.reply({ embeds: [notRegisteredEmbed], ephemeral: true });
     return;
   }
@@ -668,7 +668,7 @@ async function handleSelectMenuInteraction(
       .setTitle("👋 Left Waitlist")
       .setColor(0x95a5a6)
       .setDescription(`You have been removed from the **${GAMEMODES[gamemode]}** (${playerRegion}) waitlist.`)
-      .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+      .setFooter({ text: "Matrix Tierlist" })
       .setTimestamp();
     await interaction.reply({ embeds: [leaveEmbed], ephemeral: true });
     return;
@@ -701,7 +701,7 @@ async function handleSelectMenuInteraction(
     .setTitle("✅ Waitlist Role Granted")
     .setColor(0x6C3483)
     .setDescription(`You now have the **${GAMEMODES[gamemode]}** (${playerRegion}) waitlist role.\nYou'll be pinged when a tester is available!`)
-    .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+    .setFooter({ text: "Matrix Tierlist" })
     .setTimestamp();
   await interaction.reply({ embeds: [joinEmbed], ephemeral: true });
 }
@@ -758,7 +758,7 @@ async function handleModalSubmit(
         .setTitle("❌ IGN Already Taken")
         .setColor(0xe74c3c)
         .setDescription(`The IGN **${ign}** is already registered by <@${takenByOther[0].discordId}>.\n\nPlease use a different IGN or contact staff if you believe this is an error.`)
-        .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+        .setFooter({ text: "Matrix Tierlist" })
         .setTimestamp();
 
       await interaction.reply({ embeds: [takenEmbed], ephemeral: true });
@@ -795,7 +795,7 @@ async function handleModalSubmit(
         { name: "Preferred Server", value: preferredServer, inline: true },
       )
       .setDescription("You can now join a queue by clicking a gamemode button.")
-      .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+      .setFooter({ text: "Matrix Tierlist" })
       .setTimestamp();
 
     await interaction.reply({ embeds: [registrationEmbed], ephemeral: true });

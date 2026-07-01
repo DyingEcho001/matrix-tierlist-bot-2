@@ -107,7 +107,7 @@ export const tierRemoveCommand = {
         { name: "Role Removed", value: roleRemoved ? "✅ Yes" : "➖ No role configured", inline: true },
         { name: "Removed By", value: `<@${member.id}>`, inline: true },
       )
-      .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+      .setFooter({ text: "Matrix Tierlist" })
       .setTimestamp();
 
     await interaction.editReply({ embeds: [embed] });

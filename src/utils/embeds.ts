@@ -135,7 +135,7 @@ export function buildQueueOpenEmbed(params: {
     )
     .setColor(EMBED_COLORS.primary)
     .setFooter({
-      text: `${gamemodeName} | ${region} | Matrix tierlist Dev - DyingEcho`,
+      text: `${gamemodeName} | ${region}`,
     })
     .setTimestamp();
 }
@@ -175,7 +175,7 @@ export function buildQueueClosedEmbed(params: {
       ].join("\n")
     )
     .setColor(EMBED_COLORS.error)
-    .setFooter({ text: `${gamemodeName} | ${region} | Matrix tierlist Dev - DyingEcho` })
+    .setFooter({ text: `${gamemodeName} | ${region}` })
     .setTimestamp();
 }
 
@@ -211,7 +211,7 @@ export function buildTicketInfoEmbed(params: {
       { name: "Tester", value: `<@${testerId}>`, inline: true },
     )
     .setThumbnail(`https://visage.surgeplay.com/bust/128/${ign}`)
-    .setFooter({ text: "Matrix tierlist Dev - DyingEcho" })
+    .setFooter({ text: "Matrix Tierlist" })
     .setTimestamp();
 }
 
@@ -569,7 +569,7 @@ export function buildCooldownWarnDmEmbed(gamemode: Gamemode, expiresAt: Date): E
       ].join("\n")
     )
     .setColor(PURPLE)
-    .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+    .setFooter({ text: "Matrix Tierlist" })
     .setTimestamp();
 }
 
@@ -587,7 +587,7 @@ export function buildCooldownExpiredDmEmbed(gamemode: Gamemode): EmbedBuilder {
       ].join("\n")
     )
     .setColor(PURPLE)
-    .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+    .setFooter({ text: "Matrix Tierlist" })
     .setTimestamp();
 }
 
@@ -612,7 +612,7 @@ export function buildUnrestrictDmEmbed(params: {
       ].join("\n")
     )
     .setColor(0x57F287)
-    .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+    .setFooter({ text: "Matrix Tierlist" })
     .setTimestamp();
 }
 
@@ -649,7 +649,7 @@ export function buildRestrictionDmEmbed(params: {
     .setTitle("⛔ You Have Been Restricted")
     .setDescription(lines.join("\n"))
     .setColor(0xED4245)
-    .setFooter({ text: "Matrix Tierlist | Dev — DyingEcho" })
+    .setFooter({ text: "Matrix Tierlist" })
     .setTimestamp();
 }
 
@@ -671,7 +671,7 @@ export function buildRedeemEmbed(params: {
       { name: "Tests Spent", value: `${testsCost}`, inline: false },
       { name: "Tests Remaining", value: `${testsRemaining}`, inline: false },
     )
-    .setFooter({ text: "Ping a Regulator or above to get your reward | Matrix tierlist Dev - DyingEcho" })
+    .setFooter({ text: "Ping a Regulator or above to get your reward" })
     .setTimestamp();
 
   if (ign) {
