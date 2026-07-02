@@ -442,16 +442,13 @@ async function handleEvalHT3(
 
   const channel = interaction.channel as TextChannel;
 
-  await channel.permissionOverwrites.edit(member.id, {
-    ViewChannel: false,
-  });
-
   if (ht3CategoryRow[0]) {
     await channel.setParent(ht3CategoryRow[0].categoryId, {
       lockPermissions: false,
     });
   }
 
+  // Grant all staff roles (Helper+) access to the HT3 ticket
   const allStaffRoleRows = await db
     .select()
     .from(staffRolesTable)
@@ -464,6 +461,19 @@ async function handleEvalHT3(
       ReadMessageHistory: true,
     }).catch(() => null);
   }
+
+  // Revoke the original tester's access — they are free to pull a new testee
+  await channel.permissionOverwrites.edit(ticket.testerId, {
+    ViewChannel: false,
+    SendMessages: false,
+  }).catch(() => null);
+
+  // Ensure the testee keeps access to their own HT3 ticket
+  await channel.permissionOverwrites.edit(member.id, {
+    ViewChannel: true,
+    SendMessages: true,
+    ReadMessageHistory: true,
+  }).catch(() => null);
 
   await db
     .update(tickets)
