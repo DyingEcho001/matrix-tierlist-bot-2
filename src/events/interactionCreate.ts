@@ -469,7 +469,7 @@ async function handleEvalHT3(
   }).catch(() => null);
 
   // Ensure the testee keeps access to their own HT3 ticket
-  await channel.permissionOverwrites.edit(member.id, {
+  await channel.permissionOverwrites.edit(ticket.testeeId, {
     ViewChannel: true,
     SendMessages: true,
     ReadMessageHistory: true,
