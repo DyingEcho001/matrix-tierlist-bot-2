@@ -8,6 +8,7 @@ import { TIERS, Tier, Gamemode } from "../utils/constants";
 import { getTicketByChannel } from "../handlers/ticket";
 import { logCommand } from "../handlers/audit";
 import { buildCloseConfirmEmbed } from "../utils/embeds";
+import { hasStaffRole, isAdmin, isOwner, isSuperAdmin, hasCommandBypass } from "../utils/permissions";
 
 export const closeCommand = {
   data: new SlashCommandBuilder()
@@ -43,7 +44,14 @@ export const closeCommand = {
       return;
     }
 
-    if (ticket.testerId !== member.id) {
+    const isRegulatorOrAbove =
+      isSuperAdmin(member) ||
+      isAdmin(member) ||
+      isOwner(member) ||
+      (await hasCommandBypass(member.id, interaction.guildId!)) ||
+      (await hasStaffRole(member, interaction.guildId!, "regulator"));
+
+    if (ticket.testerId !== member.id && !isRegulatorOrAbove) {
       await interaction.editReply({
         content: "❌ Only the tester who opened this ticket can close it.",
       });
