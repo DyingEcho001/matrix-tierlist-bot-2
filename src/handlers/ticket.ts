@@ -191,7 +191,7 @@ export async function createTestingTicket(params: {
       })
       .returning();
 
-    const infoEmbed = buildTicketInfoEmbed({
+    const infoEmbeds = buildTicketInfoEmbed({
       testee,
       tester,
       gamemode,
@@ -204,7 +204,7 @@ export async function createTestingTicket(params: {
 
     await channel.send({
       content: `<@${tester.id}> <@${testee.id}>`,
-      embeds: [infoEmbed],
+      embeds: infoEmbeds,
     });
 
     return channel;

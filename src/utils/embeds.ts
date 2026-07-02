@@ -188,31 +188,41 @@ export function buildTicketInfoEmbed(params: {
   preferredServer: string;
   isPremium?: boolean | null;
   previousTier?: string | null;
-}): EmbedBuilder {
-  const { testee, tester, gamemode, ign, region, isPremium } = params;
+}): EmbedBuilder[] {
+  const { testee, tester, gamemode, ign, region, preferredServer, isPremium, previousTier } = params;
 
   const testeeId = testee instanceof GuildMember ? testee.id : testee.id;
   const testerId = tester instanceof GuildMember ? tester.id : tester.id;
+  const testeeName = testee instanceof GuildMember ? testee.displayName : testee.username;
+  const testeeAvatarURL = testee instanceof GuildMember
+    ? testee.displayAvatarURL({ size: 64 })
+    : (testee as User).displayAvatarURL({ size: 64 });
+
   const accountType = isPremium === false ? "Cracked" : "Premium";
+  const previousRankText = previousTier
+    ? (TIER_LABELS[previousTier as Tier] ?? previousTier)
+    : "Unranked";
 
-  const gamemodeName =
-    GAMEMODES[gamemode as Gamemode] ?? gamemode;
-
-  return new EmbedBuilder()
-    .setTitle("Tier Testing Session")
-    .setDescription("Tier Testing Session started. Have a good time testing in Matrix Tierlist")
-    .setColor(EMBED_COLORS.primary)
-    .addFields(
-      { name: "Player", value: `<@${testeeId}>`, inline: true },
-      { name: "Username", value: ign, inline: true },
-      { name: "Gamemode", value: gamemodeName, inline: true },
-      { name: "Region", value: region, inline: true },
-      { name: "Account Type", value: accountType, inline: true },
-      { name: "Tester", value: `<@${testerId}>`, inline: true },
+  const infoEmbed = new EmbedBuilder()
+    .setAuthor({ name: `${testeeName}'s Information`, iconURL: testeeAvatarURL })
+    .setDescription(
+      [
+        `User: <@${testeeId}>`,
+        `Region: ${region}`,
+        `Server: ${preferredServer}`,
+        `Username: ${ign}`,
+        `Previous Rank: ${previousRankText}`,
+        `Account Type: ${accountType}`,
+      ].join("\n")
     )
-    .setThumbnail(`https://visage.surgeplay.com/bust/128/${ign}`)
-    .setFooter({ text: "Matrix Tierlist" })
-    .setTimestamp();
+    .setColor(EMBED_COLORS.primary);
+
+  const commencedEmbed = new EmbedBuilder()
+    .setTitle("Test Commenced")
+    .setDescription(`<@${testeeId}> will be tested by <@${testerId}>`)
+    .setColor(EMBED_COLORS.primary);
+
+  return [infoEmbed, commencedEmbed];
 }
 
 function getResultColor(tier: Tier): number {

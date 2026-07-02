@@ -60,6 +60,7 @@ import { removeTestsCommand } from "./remove-tests";
 import { monthlyTestResetCommand } from "./monthly-testreset";
 import { registration2PanelSendCommand } from "./registration2-panel-send";
 import { refreshQueueEmbedsCommand } from "./refresh-queue-embeds";
+import { convertWaitlistTicketCommand } from "./convert-waitlist-ticket";
 
 const allCommands: Command[] = [
   startCommand,
@@ -114,6 +115,7 @@ const allCommands: Command[] = [
   monthlyTestResetCommand,
   registration2PanelSendCommand,
   refreshQueueEmbedsCommand,
+  convertWaitlistTicketCommand,
 ];
 
 for (const cmd of allCommands) {
