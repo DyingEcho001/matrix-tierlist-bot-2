@@ -7,7 +7,7 @@ import {
 } from "discord.js";
 import { db } from "../database";
 import { queues, queueTesters, queueMembers, tickets } from "../database/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 import { GAMEMODE_KEYS, GAMEMODES, Gamemode } from "../utils/constants";
 import { isVoluntaryTester, hasStaffRole } from "../utils/permissions";
 import { getOrCreateQueue, updateQueueEmbed } from "../handlers/queue";
@@ -74,7 +74,8 @@ export const endCommand = {
             eq(tickets.guildId, interaction.guildId!),
             eq(tickets.gamemode, gamemode),
             eq(tickets.region, region),
-            eq(tickets.status, "open")
+            eq(tickets.status, "open"),
+            ne(tickets.type, "ht3")
           )
         );
 
@@ -164,7 +165,8 @@ export const endCommand = {
             eq(tickets.guildId, interaction.guildId!),
             eq(tickets.gamemode, gamemode),
             eq(tickets.region, region),
-            eq(tickets.status, "open")
+            eq(tickets.status, "open"),
+            ne(tickets.type, "ht3")
           )
         );
 
