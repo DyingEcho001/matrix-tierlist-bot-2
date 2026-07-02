@@ -5,7 +5,7 @@ import {
   GuildMember,
 } from "discord.js";
 import { db } from "../database";
-import { queues, queueTesters } from "../database/schema";
+import { players, queues, queueTesters } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import { GAMEMODE_KEYS, GAMEMODES, Gamemode } from "../utils/constants";
 import { isVoluntaryTester } from "../utils/permissions";
@@ -46,6 +46,30 @@ export const joinTesterPoolCommand = {
     if (!canTest) {
       await interaction.reply({
         content: `❌ You need **@Voluntary Tester** and **@${GAMEMODES[gamemode as Gamemode]}Tester** roles to join the tester pool.`,
+        ephemeral: true,
+      });
+      return;
+    }
+
+    // Check the player's registered region matches the queue region
+    const playerData = await db
+      .select({ region: players.region })
+      .from(players)
+      .where(eq(players.discordId, member.id))
+      .limit(1);
+
+    if (playerData.length === 0) {
+      await interaction.reply({
+        content: "❌ You are not registered. Please register your profile first.",
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const playerRegion = playerData[0].region;
+    if (playerRegion !== region) {
+      await interaction.reply({
+        content: `❌ This is a **${region}** waitlist but you are registered as **${playerRegion}**.`,
         ephemeral: true,
       });
       return;
