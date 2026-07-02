@@ -318,17 +318,17 @@ export function buildPlayerDataEmbed(params: {
   const accountType = player.isPremium === false ? "Cracked" : "Premium";
 
   const profileLines = [
-    `**IGN:** \`${player.ign}\``,
-    `**Region:** \`${player.region}\``,
-    `**Account:** \`${accountType}\``,
+    `**IGN:**\n\`\`\`${player.ign}\`\`\``,
+    `**Region:** ${player.region}`,
+    `**Account:** ${accountType}`,
   ];
-  if (player.uuid) profileLines.push(`**UUID:** \`${player.uuid}\``);
+  if (player.uuid) profileLines.push(`**UUID:**\n\`\`\`${player.uuid}\`\`\``);
 
   const embed = new EmbedBuilder()
     .setTitle(`Player Data: ${player.ign}`)
     .setColor(0xed4245)
     .setDescription(
-      `<@${player.discordId}> | ${player.region} ${player.ign} |\n\`${player.discordId}\``
+      `<@${player.discordId}> | ${player.region} ${player.ign} |\n\`\`\`${player.discordId}\`\`\``
     )
     .setThumbnail(`https://visage.surgeplay.com/bust/128/${player.ign}`)
     .addFields(
