@@ -43,51 +43,18 @@ export const endCommand = {
     const gamemode = interaction.options.getString("gamemode", true);
     const region = interaction.options.getString("region", true);
 
-    const canTest = await isVoluntaryTester(member, interaction.guildId!, gamemode);
-    if (!canTest) {
-      await interaction.reply({
-        content: `❌ You need the **@Voluntary Tester** and **@${GAMEMODES[gamemode as Gamemode]} Tester** roles to close a queue.`,
-        ephemeral: true,
-      });
-      return;
-    }
-
     await interaction.deferReply({ ephemeral: true });
 
-    const queue = await getOrCreateQueue(gamemode, region);
     const isRegulatorPlus = await hasStaffRole(member, interaction.guildId!, "regulator");
 
-    const isTester = await db
-      .select()
-      .from(queueTesters)
-      .where(
-        and(
-          eq(queueTesters.queueId, queue.id),
-          eq(queueTesters.discordId, member.id)
-        )
-      )
-      .limit(1);
+    // Regulator+ always force-closes the queue regardless of tester count
+    if (isRegulatorPlus) {
+      const queue = await getOrCreateQueue(gamemode, region);
 
-    if (isTester.length === 0 && !isRegulatorPlus) {
-      await interaction.editReply({
-        content: "❌ You are not an active tester in this queue.",
-      });
-      return;
-    }
-
-    // Regulators+ who are not in the queue force-close the entire session
-    if (isTester.length === 0 && isRegulatorPlus) {
       const activeTesters = await db
         .select()
         .from(queueTesters)
         .where(eq(queueTesters.queueId, queue.id));
-
-      if (activeTesters.length === 0) {
-        await interaction.editReply({
-          content: `❌ There are no active testers in the **${GAMEMODES[gamemode as Gamemode]}** (${region}) queue to close.`,
-        });
-        return;
-      }
 
       await db.delete(queueTesters).where(eq(queueTesters.queueId, queue.id));
       await db.delete(queueMembers).where(eq(queueMembers.queueId, queue.id));
@@ -114,12 +81,12 @@ export const endCommand = {
       let deletedTickets = 0;
       for (const ticket of openTickets) {
         const ch = (await client.channels.fetch(ticket.channelId).catch(() => null)) as TextChannel | null;
-        if (ch) { await ch.delete("Queue force-closed").catch(() => null); deletedTickets++; }
+        if (ch) { await ch.delete("Queue force-closed by Regulator+").catch(() => null); deletedTickets++; }
         await db.update(tickets).set({ status: "closed", closedAt: new Date() }).where(eq(tickets.id, ticket.id));
       }
 
       await interaction.editReply({
-        content: `✅ Force-closed the **${GAMEMODES[gamemode as Gamemode]}** (${region}) queue and removed ${activeTesters.length} tester(s). All members cleared.${deletedTickets > 0 ? `\n🗑️ ${deletedTickets} active testing ticket(s) were also closed.` : ""}`,
+        content: `✅ Force-closed the **${GAMEMODES[gamemode as Gamemode]}** (${region}) queue.${activeTesters.length > 0 ? ` Removed ${activeTesters.length} tester(s).` : ""} All members cleared.${deletedTickets > 0 ? `\n🗑️ ${deletedTickets} waitlist ticket(s) were also deleted.` : ""}`,
       });
 
       await logCommand(client, {
@@ -132,7 +99,36 @@ export const endCommand = {
       return;
     }
 
-    // Normal path — tester ending their own session
+    // Non-regulator path — must have tester roles
+    const canTest = await isVoluntaryTester(member, interaction.guildId!, gamemode);
+    if (!canTest) {
+      await interaction.editReply({
+        content: `❌ You need the **@Voluntary Tester** and **@${GAMEMODES[gamemode as Gamemode]} Tester** roles to close a queue.`,
+      });
+      return;
+    }
+
+    const queue = await getOrCreateQueue(gamemode, region);
+
+    const isTester = await db
+      .select()
+      .from(queueTesters)
+      .where(
+        and(
+          eq(queueTesters.queueId, queue.id),
+          eq(queueTesters.discordId, member.id)
+        )
+      )
+      .limit(1);
+
+    if (isTester.length === 0) {
+      await interaction.editReply({
+        content: "❌ You are not an active tester in this queue.",
+      });
+      return;
+    }
+
+    // Remove this tester from the pool
     await db
       .delete(queueTesters)
       .where(
@@ -180,7 +176,7 @@ export const endCommand = {
       }
 
       await interaction.editReply({
-        content: `✅ Queue for **${GAMEMODES[gamemode as Gamemode]}** (${region}) has been closed. All members cleared.${deletedTickets > 0 ? `\n🗑️ ${deletedTickets} active testing ticket(s) were also closed.` : ""}`,
+        content: `✅ Queue for **${GAMEMODES[gamemode as Gamemode]}** (${region}) has been closed. All members cleared.${deletedTickets > 0 ? `\n🗑️ ${deletedTickets} waitlist ticket(s) were also deleted.` : ""}`,
       });
     } else {
       await interaction.editReply({
