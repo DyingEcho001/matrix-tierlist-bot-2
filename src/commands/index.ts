@@ -26,6 +26,7 @@ import { migrateProfileCommand } from "./migrate-profile";
 import { temproleCommand } from "./temprole";
 import { roleCommand } from "./role";
 import { joinTesterPoolCommand } from "./join-tester-pool";
+import { leaveTesterPoolCommand } from "./leave-tester-pool";
 import { staffRoleCommand } from "./staff-role-assign";
 import { tierRoleAssignCommand } from "./tier-role-assign";
 import { waitlistRoleSetCommand } from "./waitlist-role-set";
@@ -81,6 +82,7 @@ const allCommands: Command[] = [
   temproleCommand,
   roleCommand,
   joinTesterPoolCommand,
+  leaveTesterPoolCommand,
   staffRoleCommand,
   tierRoleAssignCommand,
   waitlistRoleSetCommand,
