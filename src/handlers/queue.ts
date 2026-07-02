@@ -153,7 +153,8 @@ export async function updateQueueEmbed(
         and(
           eq(tickets.gamemode, queue.gamemode),
           eq(tickets.region, queue.region),
-          eq(tickets.status, "open")
+          eq(tickets.status, "open"),
+          eq(tickets.isEvalPending, false)
         )
       );
 
