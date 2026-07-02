@@ -32,11 +32,8 @@ export const joinTesterPoolCommand = {
         .setDescription("The region queue to join")
         .setRequired(true)
         .addChoices(
-          { name: "NA", value: "NA" },
-          { name: "EU", value: "EU" },
-          { name: "AS", value: "AS" },
-          { name: "SA", value: "SA" },
-          { name: "AU", value: "AU" }
+          { name: "EU/NA", value: "EU/NA" },
+          { name: "AS/AU", value: "AS/AU" }
         )
     ),
 
